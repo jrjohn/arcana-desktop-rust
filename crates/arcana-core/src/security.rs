@@ -99,9 +99,16 @@ pub trait TokenService: Send + Sync {
 }
 
 /// C# `PasswordHasher`.
+///
+/// C# throws `ArgumentException` for a blank password or hash; here that is an
+/// `AppError::Validation` instead of a panic.
 pub trait PasswordHasher: Send + Sync {
-    fn hash_password(&self, password: &str) -> String;
-    fn verify_password(&self, password: &str, hashed_password: &str) -> bool;
+    /// # Errors
+    /// `ValidationFailed` when `password` is blank.
+    fn hash_password(&self, password: &str) -> AppResult<String>;
+    /// # Errors
+    /// `ValidationFailed` when `password` or `hashed_password` is blank.
+    fn verify_password(&self, password: &str, hashed_password: &str) -> AppResult<bool>;
     fn needs_rehash(&self, hashed_password: &str) -> bool;
 }
 

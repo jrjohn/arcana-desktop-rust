@@ -52,3 +52,11 @@ Marketplace、When-expression、同步伺服器、DB 加密、登入頁。
 ## 5. 驗收
 - 每段:`cargo test` 全綠、clippy 0 warning、`cargo xtask layers` 綠、Sonar 閘綠、arch-qube 過。
 - 最終:原 949 測試都有對應版本;5 張截圖畫面逐一功能對照;Windows/macOS/Linux 可執行。
+
+## 6. 里程碑 3 紀錄(infra + sync)
+- **測試**:Sync 120/120、Infrastructure 255/255 一對一移植(註解標 C# 測試名);另加 CRDT proptest 收斂性質、`QueueSyncService` 兩副本經 loopback 收斂/離線重試、設定/語系/日誌/wiring 端到端。延到 M5:無(C# Infra 測試沒有碰外掛 runtime 的)。
+- **欄位層級合併**:C# 靠反射 + `{Name}ModifiedAt` 慣例 + `[MergeStrategy]/[LocalOnly]/[RemoteOnly]` 屬性(但 `ResolveFieldLevel` 從沒讀那些屬性)。Rust 用 `Mergeable::fields()` 明列 `FieldDescriptor`(`field!` 巨集),`FieldPolicy` 的語意**有真的生效**;未列出的欄位取本地值。
+- **SyncService**:C# 只有介面。新增 `QueueSyncService`(SyncQueue 表 + `SyncTransport` trait + `ChangeApplier`),測試用 `LoopbackHub` 記憶體中繼;未定義任何網路協定。
+- **刻意偏離 C#**:PasswordHasher 空字串回 `AppError::Validation` 而非拋例外(core trait 改回傳 `AppResult`);TokenService 金鑰一律注入(拿掉 C# 以機器名+使用者名推導的可猜金鑰);`VectorClock` 的 hash 忽略 0 值項目以符合「因果相等」;`IComparable` 對 Concurrent 回 0 → Rust `PartialOrd` 回 `None`;`MvRegister::single_value` 回 `AppResult`;C# 沒實作的 key/value `SettingsService` 補 `JsonSettingsService`。
+- **保留的 C# 怪行為**:沒有截止時間的鎖定在下次登入時視同過期而自動解鎖;`AuthService` 算權限時不排除過期的角色指派(`AuthorizationService` 會排除);`KeepBoth` 與沒註冊 resolver 的 `Custom` 都退回 LWW。
+- **延後**:外掛相關(`AddPluginServices`)→ M5;`NetworkMonitorImpl`(.NET `NetworkInterface`,無可攜 std 對應)→ M4 與 UI 外殼一起決定;`LocalizationService` 契約暫放 `arcana-infra`,M5 移到 `arcana-plugin-api`。

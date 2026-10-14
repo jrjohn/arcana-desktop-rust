@@ -1,0 +1,10 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc e3d7a68a9a00c5e4cb9ddcb5f455e74137f2b5cb442477a370231c4bcece30ca # shrinks to a = LwwRegister { value: 0, timestamp: 2023-11-14T22:13:22, node_id: "d" }, b = LwwRegister { value: 1, timestamp: 2023-11-14T22:13:22, node_id: "d" }, c = LwwRegister { value: 0, timestamp: 2023-11-14T22:13:20, node_id: "a" }
+cc c4c752b53e2183ed62cd7b2b1038c17dce52ab351f82fedc4c48ec787677f598 # shrinks to a = LwwMap { fields: {"z": LwwRegister { value: Number(0), timestamp: 2023-11-14T22:13:22, node_id: "a" }} }, b = LwwMap { fields: {"z": LwwRegister { value: Number(-1), timestamp: 2023-11-14T22:13:22, node_id: "a" }} }, c = LwwMap { fields: {} }
+cc 1c49690de032b3c8e3864c30c30c1b33877456ea3ddb9bf1b2c0c4788db39c69 # shrinks to a = MvRegister { values: [(0, VectorClock { clock: {} }), (0, VectorClock { clock: {} })] }, b = MvRegister { values: [] }, c = MvRegister { values: [] }
+cc a92468573a3d03d02d74d93841eeb3f2a38dfa44c4e35a8c90b208f0dc0c73fc # shrinks to a = MvRegister { values: [(0, VectorClock { clock: {"a": 0} }), (0, VectorClock { clock: {} })] }, b = MvRegister { values: [] }, c = MvRegister { values: [] }
