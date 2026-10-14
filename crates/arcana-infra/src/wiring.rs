@@ -83,6 +83,22 @@ impl std::fmt::Debug for ArcanaServices {
 }
 
 impl ArcanaServices {
+    /// Connect (creating + migrating) the database at `url` and wire everything on it.
+    ///
+    /// # Errors
+    /// Connection/migration failure, or an empty token key.
+    pub async fn open(url: &str, config: ArcanaConfig) -> AppResult<Self> {
+        Self::new(Db::connect(url).await?, config)
+    }
+
+    /// Wire everything on a fresh in-memory database (tests, previews, screenshots).
+    ///
+    /// # Errors
+    /// Database creation/migration failure, or an empty token key.
+    pub async fn in_memory(config: ArcanaConfig) -> AppResult<Self> {
+        Self::new(Db::in_memory().await?, config)
+    }
+
     /// Wire everything on `db`.
     ///
     /// # Errors
