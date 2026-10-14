@@ -1,0 +1,14 @@
+[package]
+name = "arcana-app"
+description = "Desktop entry point (C# Arcana.App)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+arcana-ui.workspace = true
+eframe.workspace = true
+egui.workspace = true
+
+[lints]
+workspace = true

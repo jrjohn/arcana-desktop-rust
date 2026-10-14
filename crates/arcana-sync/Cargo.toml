@@ -1,0 +1,13 @@
+[package]
+name = "arcana-sync"
+description = "CRDTs, conflict strategies, sync queue (C# Arcana.Sync)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+arcana-core.workspace = true
+arcana-data.workspace = true
+
+[lints]
+workspace = true

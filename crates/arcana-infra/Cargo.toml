@@ -1,0 +1,17 @@
+[package]
+name = "arcana-infra"
+description = "Service impls, security, settings, i18n (C# Arcana.Infrastructure)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+arcana-core.workspace = true
+arcana-domain.workspace = true
+arcana-data.workspace = true
+arcana-sync.workspace = true
+arcana-plugin-api.workspace = true
+arcana-plugin-host.workspace = true
+
+[lints]
+workspace = true

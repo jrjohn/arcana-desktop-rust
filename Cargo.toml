@@ -1,0 +1,32 @@
+[workspace]
+resolver = "3"
+members = ["crates/*", "plugins/*", "xtask"]
+default-members = ["crates/arcana-app"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+repository = "https://github.com/jrjohn/arcana-desktop-rust"
+
+[workspace.dependencies]
+arcana-core = { path = "crates/arcana-core" }
+arcana-domain = { path = "crates/arcana-domain" }
+arcana-data = { path = "crates/arcana-data" }
+arcana-sync = { path = "crates/arcana-sync" }
+arcana-plugin-api = { path = "crates/arcana-plugin-api" }
+arcana-plugin-host = { path = "crates/arcana-plugin-host" }
+arcana-infra = { path = "crates/arcana-infra" }
+arcana-ui = { path = "crates/arcana-ui" }
+thiserror = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+eframe = { version = "0.36", default-features = false, features = ["default_fonts", "glow", "persistence", "accesskit"] }
+egui = "0.36"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
