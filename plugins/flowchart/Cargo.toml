@@ -1,0 +1,12 @@
+[package]
+name = "arcana-plugin-flowchart"
+description = "Flow chart editor plugin (C# plugins/FlowChartModule). Milestone 5."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+arcana-plugin-api.workspace = true
+
+[lints]
+workspace = true

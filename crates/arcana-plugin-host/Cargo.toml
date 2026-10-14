@@ -1,0 +1,13 @@
+[package]
+name = "arcana-plugin-host"
+description = "Plugin runtime: registry, dependency order, permissions, WASM sandbox (C# Arcana.Plugins)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+arcana-core.workspace = true
+arcana-plugin-api.workspace = true
+
+[lints]
+workspace = true

@@ -1,0 +1,12 @@
+[package]
+name = "arcana-plugin-api"
+description = "Plugin contracts: 18 plugin types, Plugin trait, manifest (C# Arcana.Plugins.Contracts)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+arcana-core.workspace = true
+
+[lints]
+workspace = true

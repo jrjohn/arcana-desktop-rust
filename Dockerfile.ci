@@ -1,0 +1,7 @@
+# CI toolchain image: fmt, clippy (pedantic, -D warnings), tests, layer check, coverage.
+FROM rust:1.97-bookworm
+RUN rustup component add rustfmt clippy llvm-tools-preview \
+ && cargo install cargo-llvm-cov --locked
+WORKDIR /app
+COPY . .
+CMD ["bash", "scripts/ci-check.sh"]
