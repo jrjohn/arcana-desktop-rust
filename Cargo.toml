@@ -30,6 +30,18 @@ rust_decimal = { version = "1", default-features = false, features = ["std"] }
 rust_decimal_macros = "1"
 sqlx = { version = "0.8", default-features = false, features = ["sqlite", "runtime-tokio", "migrate", "macros"] }
 tokio = { version = "1", features = ["sync"] }
+pbkdf2 = { version = "0.12", default-features = false, features = ["hmac"] }
+hmac = "0.12"
+sha2 = "0.10"
+base64 = "0.22"
+getrandom = "0.2"
+subtle = "2"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", default-features = false, features = ["fmt", "std", "ansi", "env-filter"] }
+tracing-appender = "0.2"
+dirs = "5"
+tempfile = "3"
+proptest = "1"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
@@ -37,3 +49,13 @@ unsafe_code = "forbid"
 [workspace.lints.clippy]
 all = { level = "warn", priority = -1 }
 pedantic = { level = "warn", priority = -1 }
+
+# PBKDF2 runs 100 000 HMAC rounds per hash; unoptimised it takes seconds per test.
+[profile.dev.package.sha2]
+opt-level = 3
+
+[profile.dev.package.hmac]
+opt-level = 3
+
+[profile.dev.package.pbkdf2]
+opt-level = 3
