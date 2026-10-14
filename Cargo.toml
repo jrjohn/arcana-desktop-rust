@@ -23,6 +23,13 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 eframe = { version = "0.36", default-features = false, features = ["default_fonts", "glow", "persistence", "accesskit"] }
 egui = "0.36"
+async-trait = "0.1"
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+uuid = { version = "1", features = ["v4"] }
+rust_decimal = { version = "1", default-features = false, features = ["std"] }
+rust_decimal_macros = "1"
+sqlx = { version = "0.8", default-features = false, features = ["sqlite", "runtime-tokio", "migrate", "macros"] }
+tokio = { version = "1", features = ["sync"] }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

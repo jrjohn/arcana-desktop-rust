@@ -8,6 +8,16 @@ license.workspace = true
 [dependencies]
 arcana-core.workspace = true
 arcana-domain.workspace = true
+async-trait.workspace = true
+chrono.workspace = true
+uuid.workspace = true
+rust_decimal.workspace = true
+sqlx.workspace = true
+tokio.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt"] }
+rust_decimal_macros.workspace = true
 
 [lints]
 workspace = true
