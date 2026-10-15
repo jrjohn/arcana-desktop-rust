@@ -533,7 +533,7 @@ impl PluginHost {
             } else {
                 m.name.clone()
             },
-            version: crate::version::parse_lenient(&m.version),
+            version: crate::compat::parse_lenient(&m.version),
             description: m.description.clone(),
             author: m.author.clone(),
             plugin_type: PluginType::parse(&m.plugin_type).unwrap_or_default(),
