@@ -348,6 +348,7 @@ version = "0.1.0"
 dependencies = [
  "arcana-core",
  "arcana-plugin-api",
+ "arcana-plugin-wasm",
  "async-trait",
  "chrono",
  "inventory",

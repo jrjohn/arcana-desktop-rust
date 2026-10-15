@@ -18,6 +18,7 @@ pub mod plugin_base;
 pub mod services;
 pub mod version;
 pub mod version_store;
+pub mod wasm;
 
 #[doc(hidden)]
 pub use inventory;

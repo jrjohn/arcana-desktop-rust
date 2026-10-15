@@ -8,6 +8,7 @@ license.workspace = true
 [dependencies]
 arcana-core.workspace = true
 arcana-plugin-api.workspace = true
+arcana-plugin-wasm.workspace = true
 async-trait.workspace = true
 chrono.workspace = true
 inventory.workspace = true
