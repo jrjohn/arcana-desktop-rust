@@ -27,6 +27,7 @@ tracing-subscriber.workspace = true
 tracing-appender.workspace = true
 dirs.workspace = true
 rust_decimal.workspace = true
+semver.workspace = true
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread", "time"] }

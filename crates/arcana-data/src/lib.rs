@@ -6,6 +6,7 @@
 
 pub mod dao;
 pub mod db;
+pub mod plugin_store;
 pub mod repository;
 pub mod row;
 pub mod tables;
@@ -15,6 +16,10 @@ pub use dao::{
     CustomerDao, CustomerDaoImpl, OrderDao, OrderDaoImpl, OrderFilter, ProductDao, ProductDaoImpl,
 };
 pub use db::{Db, MIGRATOR};
+pub use plugin_store::{
+    MAX_HEALTH_SNAPSHOTS, PluginHealthSnapshotRow, PluginMetadataRow, PluginStoreDao,
+    PluginVersionRow,
+};
 pub use repository::{
     CustomerRepository, CustomerRepositoryImpl, OrderRepository, OrderRepositoryImpl,
     ProductRepository, ProductRepositoryImpl, SqliteRepository,

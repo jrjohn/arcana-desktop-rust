@@ -13,6 +13,7 @@ pub mod locale;
 pub mod localization;
 pub mod logging;
 pub mod network;
+pub mod plugin_store;
 pub mod security;
 pub mod seed;
 pub mod services;
