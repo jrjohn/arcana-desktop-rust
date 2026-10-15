@@ -118,9 +118,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let pm = h.state().focused_tab().ok_or("no tab")?;
     h.state_mut().send(
         pm,
-        PageMsg::PluginManager(plugin_manager::Input::Select(
-            "arcana.module.order".into(),
-        )),
+        PageMsg::PluginManager(plugin_manager::Input::Select("arcana.module.order".into())),
     );
     h.state_mut().send(
         pm,

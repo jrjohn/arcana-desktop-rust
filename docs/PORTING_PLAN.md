@@ -72,3 +72,14 @@ Marketplace、When-expression、同步伺服器、DB 加密、登入頁。
 - **UI 字串**:核心字串檔不動(M3 測試鎖了筆數);C# CoreMenu 外掛自帶的 locale 檔與本次新增字串以 plugin resources 註冊,查詢一律走 `get_from_any_plugin`。
 - **測試**:C# 沒有 App/ViewModel 測試可移植。每頁 VM 單元測試 + NavGraph/Command/Theme/格式化測試 + shell 邏輯測試(真服務 + in-memory DB)+ `egui_kittest` 主流程(訂單清單→分頁開明細→編輯→存檔、新增訂單驗證訊息、語系切換、主題/強調色、外掛清單 + 選單)。kittest 不用 renderer,CI 無需額外系統套件。
 - **截圖**:`cargo run -p arcana-app --features screenshots --bin screenshots -- docs/screen-rust`(wgpu 離屏繪製真 shell),輸出在 `docs/screen-rust/`,對照 C# `docs/screen/`。
+
+## 8. 里程碑 5 紀錄(外掛 + FlowChart)— UI 部分(草稿)
+- **組裝**:`arcana_infra::plugin_runtime::PluginRuntime::start` 建 `HostServices`(H1 各 `*Impl`、`QueuedNavGraph`(已知路由 = C# `NavGraph.Routes` + `FlowChartEditorPage`)、`QueuedWindowService`、既有 `LocalizationServiceImpl`)與 `PluginHost`(`HostPaths::under(資料目錄)`、`SqlitePluginVersionStore` 存主資料庫),掛 `WasmLoader`,`register_compiled_builtins()`(inventory 的 5 個內建)+ UI 傳入的 `FlowChartPlugin`,`discover()`、`activate_all()`。放在 `UiServices::plugins`;`UiServices::from_arcana` 多一個 `plugins_root` 參數。
+- **選單**:選單列改由 `MenuRegistry` 繪製(`MainMenu` 且無 parent 的為根,依 `parent_id` 建樹、依 `order` 排、`is_separator` 畫分隔線),點擊走 `CommandService::execute`。chrome.rs 寫死的選單已移除;快捷鍵與命令搜尋仍走 `CommandRegistry`。
+- **外掛 → shell**:每幀 `pump_plugins()` 排空 `QueuedNavGraph`(轉 `NavRequest`;`FlowChartEditorPage` + `EditorArgs` → `Route::FlowChart { mode }`)、MessageBus 上的 `ShellCommand`(→ `CommandRegistry::by_name` → `Shell::execute`)、`QueuedWindowService`(→ toast)。C# 未實作頁面(`ProductCategoriesPage`)顯示「開發中」。
+- **語系**:選單標題在註冊時以 `L()` 決定(同 C#);切換語系時 shell 對每個 Active 外掛 `reload`,重新註冊貢獻(C# 只有 CoreMenu 訂閱 `CultureChanged` 重建選單)。CoreMenu locale 改由外掛自己註冊,`arcana-ui/resources/menu` 移除。
+- **PluginManager**:列 `host.all_plugins()`(含健康、錯誤數、已授予/待核准權限);安裝(套件目錄路徑)、啟用、停用、重載、升級、回滾(選版本,`available_versions`)、解除安裝、核准權限、健康檢查皆為 async task,結果 toast 後重新載入清單。manifest 有 `contributes.configuration` 時以 `settings_form` 產生設定表單,值存 `plugin.<id>.<key>`。外掛有 `ui_tree()`(WASM 宣告式 UI)時由 host 繪製,button 執行 `commands.execute(command)`。
+- **FlowChart 分頁**:`Route::FlowChart` 開文件分頁(每次新分頁),`Page::show` 改 `&mut self` 讓畫布直接改 VM;開檔 / 另存新檔以路徑輸入對話框代替原生檔案對話框,讀寫在 `spawn_blocking`。
+- **分層表**:`arcana-ui` 可依賴 `arcana-plugin-api`、`arcana-plugin-host`、`arcana-plugin-flowchart`(繪製外掛貢獻 + FlowChart 文件分頁)。
+- **kittest**:PluginManager 停用→啟用(狀態 Active↔Deactivated、`menu.business.order` 消失/出現、toast)、Tools → FlowChart → New FlowChart 開分頁 + Add Node + Undo;既有「Business → Product → Product Management」改走巢狀外掛選單。
+- **截圖對照**(`docs/screen-rust/flowchart.png` vs C# `docs/screen/Flow Chart Plugin.png`):同樣有工具列、格線畫布、屬性面板、狀態列;差異 —— C# 左側有「Shapes」形狀清單面板(這裡是工具列下拉選單)、側欄有 FunctionTree 的「FlowChart」項(這裡側欄仍是固定清單,沒讀 `FunctionTree` 貢獻)、屬性面板 C# 有 Diagram Name / Description / Show Grid / Snap / Grid Size(這裡未選取時只顯示「Nothing selected」)、工具列 C# 有圖示 + 文字。

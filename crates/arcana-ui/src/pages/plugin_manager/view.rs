@@ -190,6 +190,82 @@ fn setting_widget(ui: &mut Ui, f: &SettingField, v: &serde_json::Value, out: &mu
     }
 }
 
+/// Draw a plugin's declarative UI (`arcana-plugin-wasm` `UiNode` JSON, `type`-tagged:
+/// form / text / input / button / table / list). Unknown nodes are skipped.
+fn ui_node(ui: &mut Ui, n: &serde_json::Value, out: &mut Vec<Input>, depth: usize) {
+    let s = |k: &str| n.get(k).and_then(|v| v.as_str()).unwrap_or_default();
+    let strings = |v: Option<&serde_json::Value>| -> Vec<String> {
+        v.and_then(|v| v.as_array())
+            .map(|a| {
+                a.iter()
+                    .map(|x| x.as_str().unwrap_or_default().to_string())
+                    .collect()
+            })
+            .unwrap_or_default()
+    };
+    if depth > 16 {
+        return;
+    }
+    match s("type") {
+        "form" => {
+            if !s("title").is_empty() {
+                subtitle(ui, s("title"));
+            }
+            for c in n
+                .get("children")
+                .and_then(|c| c.as_array())
+                .into_iter()
+                .flatten()
+            {
+                ui_node(ui, c, out, depth + 1);
+            }
+        }
+        "text" => {
+            ui.label(s("text"));
+        }
+        "input" => {
+            ui.horizontal(|ui| {
+                ui.label(s("label"));
+                let mut v = s("value").to_string();
+                ui.add_enabled(false, egui::TextEdit::singleline(&mut v));
+            });
+        }
+        "button" => {
+            if ui.button(s("label")).clicked() {
+                out.push(Input::PluginCommand(s("command").to_string()));
+            }
+        }
+        "table" => {
+            let cols = strings(n.get("columns"));
+            egui::Grid::new(("plugin_ui_table", depth, cols.join("|")))
+                .striped(true)
+                .show(ui, |ui| {
+                    for c in &cols {
+                        ui.label(RichText::new(c).strong());
+                    }
+                    ui.end_row();
+                    for row in n
+                        .get("rows")
+                        .and_then(|r| r.as_array())
+                        .into_iter()
+                        .flatten()
+                    {
+                        for cell in strings(Some(row)) {
+                            ui.label(cell);
+                        }
+                        ui.end_row();
+                    }
+                });
+        }
+        "list" => {
+            for item in strings(n.get("items")) {
+                ui.label(format!("• {item}"));
+            }
+        }
+        _ => {}
+    }
+}
+
 fn details(ui: &mut Ui, s: &State, cx: &ViewCx<'_>, out: &mut Vec<Input>) {
     let Some(p) = s.selected_plugin() else {
         ui.label(RichText::new(cx.t("ui.plugins.selectHint")).weak());
@@ -276,6 +352,15 @@ fn details(ui: &mut Ui, s: &State, cx: &ViewCx<'_>, out: &mut Vec<Input>) {
             action_button(ui, s, cx, a, out);
         }
     });
+    extras(ui, p, cx, out);
+}
+
+/// Plugin-described UI and the generated settings form.
+fn extras(ui: &mut Ui, p: &PluginRow, cx: &ViewCx<'_>, out: &mut Vec<Input>) {
+    if let Some(tree) = &p.ui_tree {
+        ui.separator();
+        ui_node(ui, tree, out, 0);
+    }
     if !p.settings.is_empty() {
         ui.separator();
         subtitle(ui, &cx.t("ui.plugins.settings"));

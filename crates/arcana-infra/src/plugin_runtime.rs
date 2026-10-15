@@ -100,6 +100,7 @@ impl PluginRuntime {
             paths,
             Arc::new(SqlitePluginVersionStore::new(db.clone())),
         );
+        host.add_loader(Arc::new(arcana_plugin_host::wasm::WasmLoader::default()));
         host.register_compiled_builtins();
         for p in extra {
             host.register_builtin(p);

@@ -48,6 +48,7 @@ fn rows(svc: &UiServices) -> Vec<PluginRow> {
                 },
                 granted_permissions: host.permissions.permissions(&p.id).to_string(),
                 settings,
+                ui_tree: host.with_plugin(&p.id, |pl| pl.ui_tree()).flatten(),
                 name: p.name,
                 id: p.id,
             }
@@ -78,6 +79,10 @@ async fn op(op: Op, svc: &UiServices) -> Input {
                 None => Input::Done(false, format!("Plugin not found: {id}")),
             }
         }
+        Op::Command(c) => match host.services.commands.execute(&c, Vec::new()) {
+            Ok(()) => Input::Done(true, c),
+            Err(e) => Input::Done(false, e.to_user_message()),
+        },
         Op::CheckAllHealth => {
             let all = host.check_all_health().await;
             Input::Done(true, format!("Checked {} plugins", all.len()))

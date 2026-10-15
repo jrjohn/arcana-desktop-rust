@@ -246,7 +246,11 @@ fn plugin_manager_deactivate_and_activate_change_state_and_menus() {
     settle(&mut h);
     assert_eq!(state(&h), PluginState::Deactivated);
     assert!(!has_menu(&h, "menu.business.order"));
-    assert!(h.query_all_by_label("Plugin deactivated successfully").next().is_some());
+    assert!(
+        h.query_all_by_label("Plugin deactivated successfully")
+            .next()
+            .is_some()
+    );
     h.get_by_label("Activate").click();
     settle(&mut h);
     assert_eq!(state(&h), PluginState::Active);

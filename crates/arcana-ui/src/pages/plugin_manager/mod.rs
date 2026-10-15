@@ -38,6 +38,8 @@ pub struct PluginRow {
     pub granted_permissions: String,
     /// Generated settings form fields with their current values.
     pub settings: Vec<(SettingField, serde_json::Value)>,
+    /// Declarative UI a WASM plugin describes (`UiNode` JSON, `type`-tagged); host-drawn.
+    pub ui_tree: Option<serde_json::Value>,
 }
 
 /// A host operation.
@@ -53,6 +55,8 @@ pub enum Op {
     Approve(String),
     CheckHealth(String),
     CheckAllHealth,
+    /// A button in a plugin's declarative UI (`commands.execute(command)`).
+    Command(String),
 }
 
 /// What the buttons ask for; the VM turns it into an [`Op`] with the selection and inputs.
@@ -166,6 +170,7 @@ pub enum Input {
     /// Result of an operation: `(success, message)`.
     Done(bool, String),
     SettingChanged(String, serde_json::Value),
+    PluginCommand(String),
 }
 
 /// Async work against the plugin host.
@@ -249,6 +254,7 @@ impl ViewModel {
             Input::CheckHealth(id) => return self.op(Op::CheckHealth(id)),
             Input::CheckAllHealth => return self.op(Op::CheckAllHealth),
             Input::Runtime(a) => return self.action(a),
+            Input::PluginCommand(c) => return self.op(Op::Command(c)),
             Input::Done(ok, message) => {
                 s.busy = s.busy.saturating_sub(1);
                 let level = if ok {
@@ -306,6 +312,7 @@ mod tests {
             pending_permissions: String::new(),
             granted_permissions: String::new(),
             settings: vec![],
+            ui_tree: None,
         }
     }
 
