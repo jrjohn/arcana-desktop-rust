@@ -91,7 +91,6 @@ pipeline {
                             }
                         }
                     }
-                    }
                     post { always { sh 'docker rmi "$IMG" "$GUI_IMG" >/dev/null 2>&1 || true' } }
                 }
                 stage('Windows') {
