@@ -14,6 +14,7 @@ pub mod localization;
 pub mod logging;
 pub mod network;
 pub mod plugins;
+pub mod plugin_store;
 pub mod security;
 pub mod seed;
 pub mod services;
