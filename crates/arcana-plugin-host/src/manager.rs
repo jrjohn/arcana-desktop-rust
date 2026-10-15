@@ -5,7 +5,7 @@
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex, MutexGuard, PoisonError, Weak};
+use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 use arcana_core::{AppError, AppResult, ErrorCode};
 use arcana_plugin_api::{
@@ -17,7 +17,7 @@ use chrono::{DateTime, Utc};
 
 use crate::activation::ActivationEventService;
 use crate::dependency::DependencyResolver;
-use crate::health::PluginHealthMonitor;
+use crate::health::{HealthTarget, PluginHealthMonitor};
 use crate::lazy::LazyContributionService;
 use crate::loader::PluginLoader;
 use crate::manifest_service::ManifestService;
@@ -78,7 +78,6 @@ impl HostPaths {
 
 /// The plugin runtime.
 pub struct PluginHost {
-    pub(crate) me: Weak<PluginHost>,
     pub services: HostServices,
     pub manifests: Arc<ManifestService>,
     pub activation: Arc<ActivationEventService>,
@@ -100,6 +99,14 @@ impl std::fmt::Debug for PluginHost {
             .field("pending", &r.pending.keys().collect::<Vec<_>>())
             .finish_non_exhaustive()
     }
+}
+
+/// `"id@range"` → `"id"`.
+pub(crate) fn dependency_id(dep: &str) -> String {
+    dep.split_once('@')
+        .map_or(dep, |(id, _)| id)
+        .trim()
+        .to_string()
 }
 
 pub(crate) fn not_found(id: &str) -> AppError {
@@ -134,14 +141,13 @@ impl PluginHost {
             activation.clone(),
             services.localization.clone(),
         ));
-        let host = Arc::new_cyclic(|me: &Weak<Self>| Self {
-            me: me.clone(),
+        let host = Arc::new(Self {
             services,
             manifests: Arc::new(ManifestService::new()),
             activation: activation.clone(),
             lazy,
-            permissions: Arc::new(PluginPermissionManager::new()),
-            health: Arc::new(PluginHealthMonitor::new()),
+            permissions: Arc::new(PluginPermissionManager::new(&paths.data)),
+            health: Arc::new(PluginHealthMonitor::with_store(store.clone())),
             store,
             paths,
             registry: Mutex::default(),
@@ -248,7 +254,7 @@ impl PluginHost {
             return;
         };
         if let Ok(requested) = manifest.requested_permissions() {
-            self.permissions.register_requested(&id, requested);
+            let _ = self.permissions.request_permissions(&id, requested);
         }
         self.lazy.register_manifest_contributions(&manifest, &dir);
         self.activation
@@ -274,7 +280,26 @@ impl PluginHost {
                 .values()
                 .map(|l| l.plugin.metadata().clone())
                 .collect();
-            DependencyResolver::new().resolve_load_order(&metas)
+            let mut r = DependencyResolver::new();
+            for m in &metas {
+                if let Err(e) = r.register_metadata(m) {
+                    tracing::warn!(plugin = %m.id, error = %e, "dependency metadata");
+                }
+            }
+            let res = r.resolve();
+            if res.success {
+                Ok(res.resolved_order)
+            } else {
+                Err(AppError::Plugin {
+                    code: ErrorCode::PluginIncompatible,
+                    message: format!(
+                        "missing: {:?}, conflicts: {}",
+                        res.missing_dependencies,
+                        res.conflicts.len()
+                    ),
+                    plugin_id: None,
+                })
+            }
         };
         let ids: Vec<String> = match order {
             Ok(ids) => ids,
@@ -371,7 +396,7 @@ impl PluginHost {
         let pending = self.reg().pending.get(id).cloned();
         if let Some(p) = pending {
             for dep in p.manifest.dependencies.iter().flatten() {
-                self.activate(&crate::dependency::dependency_id(dep))?;
+                self.activate(&crate::manager::dependency_id(dep))?;
             }
             self.load_pending(&p)?;
             self.lazy.on_plugin_activated(id);
@@ -396,7 +421,7 @@ impl PluginHost {
         let deps = loaded.plugin.metadata().dependencies.clone();
         let result = deps
             .iter()
-            .try_for_each(|d| self.activate(&crate::dependency::dependency_id(d)))
+            .try_for_each(|d| self.activate(&crate::manager::dependency_id(d)))
             .and_then(|()| {
                 let ctx = PluginContext::new(
                     id,
@@ -500,8 +525,7 @@ impl PluginHost {
     /// Remove a loaded plugin from the registry (C# `UnloadPluginAsync`).
     pub fn unload(&self, id: &str) -> bool {
         let _ = self.deactivate(id);
-        let removed = self.reg().loaded.remove(id).is_some();
-        removed
+        self.reg().loaded.remove(id).is_some()
     }
 
     fn info_of(l: &Loaded) -> PluginInfo {
@@ -631,15 +655,14 @@ impl PluginHost {
             reg.loaded
                 .values()
                 .map(|l| {
-                    self.health
-                        .check_health(&Self::info_of(l), l.plugin.as_health_check())
+                    let m = l.plugin.metadata();
+                    let target = HealthTarget::new(&m.id, &m.name, l.plugin.state());
+                    self.health.evaluate(&target, l.plugin.as_health_check())
                 })
                 .collect()
         };
         for s in &results {
-            if let Err(e) = self.store.record_health_snapshot(s).await {
-                tracing::warn!(plugin = %s.plugin_id, error = %e, "health snapshot not stored");
-            }
+            self.health.persist(s).await;
         }
         results
     }

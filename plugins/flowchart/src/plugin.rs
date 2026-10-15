@@ -92,7 +92,7 @@ impl FlowChartPlugin {
             category: Some(Self::l(ctx, "menu.tools")),
             can_have_multiple_instances: true,
             ..ViewDefinition::default()
-        }));
+        })?);
         let main = MenuLocation::MainMenu;
         let mut quick = menu(
             "quick.newFlowChart",
@@ -151,7 +151,7 @@ impl FlowChartPlugin {
                 Some("flowchart.new"),
             ),
             quick,
-        ]));
+        ])?);
         for (cmd, args) in [
             ("flowchart.new", EditorArgs::New),
             ("flowchart.open", EditorArgs::OpenDialog),

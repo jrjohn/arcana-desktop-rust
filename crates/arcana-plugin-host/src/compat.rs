@@ -6,8 +6,8 @@ use arcana_plugin_api::PluginManifest;
 /// WIT world ABI version this host implements (see `arcana-plugin-wasm`).
 pub const HOST_ABI_VERSION: u32 = 1;
 
-/// C# `Version.TryParse(..) ? v : new Version(1, 0, 0)` with 2–4 parts mapped onto SemVer
-/// (`1.2` → `1.2.0`, the 4th .NET part is dropped). Full SemVer strings parse as-is.
+/// C# `Version.TryParse(..) ? v : new Version(1, 0, 0)` with 2–4 parts mapped onto `SemVer`
+/// (`1.2` → `1.2.0`, the 4th `.NET` part is dropped). Full `SemVer` strings parse as-is.
 #[must_use]
 pub fn parse_lenient(s: &str) -> semver::Version {
     if let Ok(v) = semver::Version::parse(s.trim()) {

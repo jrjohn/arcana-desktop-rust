@@ -2,13 +2,15 @@
 //! version history (persisted through [`crate::version_store::PluginVersionStore`]).
 //!
 //! A package is a directory holding `plugin.json` and the `main` file (C# uses a `.zip`;
-//! zip handling is not ported — see PORTING_PLAN §8).
+//! zip handling is not ported — see `PORTING_PLAN` §8).
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 use arcana_core::{AppError, AppResult, ErrorCode};
-use arcana_plugin_api::{PluginManifest, PluginOperationResult, PluginState, PluginVersionInfo};
+use arcana_plugin_api::{
+    PluginManifest, PluginOperationResult, PluginPermission, PluginState, PluginVersionInfo,
+};
 use chrono::Utc;
 
 use crate::manager::PluginHost;
@@ -441,7 +443,7 @@ impl PluginHost {
         if self.plugin(id).is_none() {
             return PluginOperationResult::failed(Some(id), "Plugin not found", Some("NOT_FOUND"));
         }
-        self.permissions.approve_requested(id);
+        self.permissions.approve(id, PluginPermission::FULL_ACCESS);
         PluginOperationResult::succeeded(id, Some("Permissions approved"))
     }
 }

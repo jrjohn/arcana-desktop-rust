@@ -120,7 +120,7 @@ impl PluginBase {
     /// No context.
     pub fn register_menu_item(&self, item: MenuItemDefinition) -> AppResult<()> {
         let ctx = self.ctx()?;
-        ctx.track(ctx.menus.register_menu_item(item));
+        ctx.track(ctx.menus.register_menu_item(item)?);
         Ok(())
     }
 
@@ -128,7 +128,7 @@ impl PluginBase {
     /// No context.
     pub fn register_menu_items(&self, items: Vec<MenuItemDefinition>) -> AppResult<()> {
         let ctx = self.ctx()?;
-        ctx.track(ctx.menus.register_menu_items(items));
+        ctx.track(ctx.menus.register_menu_items(items)?);
         Ok(())
     }
 
@@ -136,7 +136,7 @@ impl PluginBase {
     /// No context.
     pub fn register_view(&self, view: ViewDefinition) -> AppResult<()> {
         let ctx = self.ctx()?;
-        ctx.track(ctx.views.register_view(view));
+        ctx.track(ctx.views.register_view(view)?);
         Ok(())
     }
 

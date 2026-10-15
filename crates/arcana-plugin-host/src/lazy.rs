@@ -79,11 +79,17 @@ impl LazyContributionService {
         let mut commands = Vec::new();
         if let Some(c) = &manifest.contributes {
             for v in c.views.iter().flatten() {
-                subs.push(self.register_lazy_view(v));
+                match self.register_lazy_view(v) {
+                    Ok(sub) => subs.push(sub),
+                    Err(e) => tracing::warn!(view = %v.id, error = %e, "lazy view"),
+                }
                 views.push(v.id.clone());
             }
             for m in c.menus.iter().flatten() {
-                subs.push(self.menus.register_menu_item(self.convert_menu(m)));
+                match self.menus.register_menu_item(self.convert_menu(m)) {
+                    Ok(sub) => subs.push(sub),
+                    Err(e) => tracing::warn!(menu = %m.id, error = %e, "lazy menu"),
+                }
                 menus.push(m.id.clone());
             }
             for cmd in c.commands.iter().flatten() {
@@ -124,7 +130,7 @@ impl LazyContributionService {
         }
     }
 
-    fn register_lazy_view(&self, v: &ManifestViewDefinition) -> Subscription {
+    fn register_lazy_view(&self, v: &ManifestViewDefinition) -> AppResult<Subscription> {
         let def = ViewDefinition {
             id: v.id.clone(),
             title: self.title(Some(&v.title_key), v.title.as_deref(), &v.id),
@@ -139,7 +145,7 @@ impl LazyContributionService {
             is_module_default_tab: v.is_module_default_tab,
             module_tab_order: v.module_tab_order,
         };
-        let view_sub = self.views.register_view(def);
+        let view_sub = self.views.register_view(def)?;
         let activation = self.activation.clone();
         let view_id = v.id.clone();
         // C#: fires onView and returns null; the caller retries once the real view exists.
@@ -150,7 +156,7 @@ impl LazyContributionService {
                 Box::new(()) as arcana_plugin_api::ViewInstance
             }),
         );
-        Subscription::all(vec![view_sub, factory_sub])
+        Ok(Subscription::all(vec![view_sub, factory_sub]))
     }
 
     fn convert_menu(&self, m: &ManifestMenuDefinition) -> MenuItemDefinition {
