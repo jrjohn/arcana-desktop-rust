@@ -8,6 +8,7 @@
 
 pub mod geometry;
 pub mod model;
+pub mod plugin;
 pub mod serializer;
 pub mod ui;
 pub mod vm;
