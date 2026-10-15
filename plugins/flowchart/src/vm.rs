@@ -4,7 +4,7 @@
 
 use std::path::{Path, PathBuf};
 
-use crate::model::{ConnectionPoint, Diagram, DiagramEdge, DiagramNode, NodeShape};
+use crate::model::{ConnectionPoint, Diagram, DiagramEdge, DiagramNode, NodeShape, Point};
 use crate::serializer::{DiagramFormat, format_from_extension};
 
 /// Undo depth (C# trims its stack to 50).
@@ -15,6 +15,9 @@ pub const ZOOM_STEP: f64 = 0.1;
 /// C# `UpdateNodeSize` minimums.
 pub const MIN_NODE_WIDTH: f64 = 40.0;
 pub const MIN_NODE_HEIGHT: f64 = 30.0;
+/// Grid size range offered by the properties panel.
+pub const GRID_MIN: f64 = 5.0;
+pub const GRID_MAX: f64 = 100.0;
 
 /// Everything the user can ask the editor to do (C# nested `Input` class).
 #[derive(Debug, Clone, PartialEq)]
@@ -88,6 +91,47 @@ pub enum Input {
     ToggleSnapToGrid,
     SetSelectedShape(NodeShape),
     CreateSampleDiagram,
+    /// Diagram properties (shown when nothing is selected).
+    SetDiagramName(String),
+    SetDiagramDescription(String),
+    SetShowGrid(bool),
+    SetSnapToGrid(bool),
+    SetGridSize(f64),
+    /// Properties-panel edit of a node's bounds (one undo step).
+    SetNodeBounds {
+        id: String,
+        x: f64,
+        y: f64,
+        width: f64,
+        height: f64,
+    },
+    /// Resize-handle drag (no undo; the gesture starts with `BeginMove`).
+    ResizeNode {
+        id: String,
+        x: f64,
+        y: f64,
+        width: f64,
+        height: f64,
+    },
+    /// Insert a bend point at `index` of the edge's waypoints. An edge drawn by automatic
+    /// routing first gets its current bends as explicit waypoints. One undo step.
+    InsertWaypoint {
+        edge: String,
+        index: usize,
+        x: f64,
+        y: f64,
+    },
+    /// Drag a bend point (no undo; the gesture starts with `BeginMove`/`InsertWaypoint`).
+    MoveWaypoint {
+        edge: String,
+        index: usize,
+        x: f64,
+        y: f64,
+    },
+    RemoveWaypoint {
+        edge: String,
+        index: usize,
+    },
 }
 
 /// Side effects for the host (C# nested `Effect` class; file effects carry the payload).
@@ -508,6 +552,125 @@ impl EditorViewModel {
                 self.state.modified = true;
                 vec![Effect::DiagramChanged]
             }
+            Input::SetDiagramName(name) => {
+                if s.diagram.name == name {
+                    return vec![];
+                }
+                self.save_undo();
+                self.state.diagram.name = name;
+                self.state.diagram.touch();
+                self.changed("Diagram renamed")
+            }
+            Input::SetDiagramDescription(text) => {
+                if s.diagram.description == text {
+                    return vec![];
+                }
+                self.save_undo();
+                self.state.diagram.description = text;
+                self.state.diagram.touch();
+                self.changed("Description changed")
+            }
+            Input::SetShowGrid(b) => {
+                s.diagram.show_grid = b;
+                vec![]
+            }
+            Input::SetSnapToGrid(b) => {
+                s.diagram.snap_to_grid = b;
+                vec![]
+            }
+            Input::SetGridSize(g) => {
+                s.diagram.grid_size = g.clamp(GRID_MIN, GRID_MAX);
+                vec![]
+            }
+            Input::SetNodeBounds {
+                id,
+                x,
+                y,
+                width,
+                height,
+            } => {
+                if s.diagram.node(&id).is_none() {
+                    return vec![];
+                }
+                self.save_undo();
+                self.set_bounds(&id, x, y, width, height);
+                self.changed("Node resized")
+            }
+            Input::ResizeNode {
+                id,
+                x,
+                y,
+                width,
+                height,
+            } => {
+                let (x, y) = self.snap(x, y);
+                self.set_bounds(&id, x, y, width, height);
+                vec![]
+            }
+            Input::InsertWaypoint { edge, index, x, y } => {
+                let Some(e) = s.diagram.edges.iter().find(|e| e.id == edge) else {
+                    return vec![];
+                };
+                let route = crate::geometry::edge_path(&s.diagram, e).unwrap_or_default();
+                let materialize = e.waypoints.is_empty() && route.len() > 2;
+                self.save_undo();
+                let (x, y) = self.snap(x, y);
+                let Some(e) = self.state.diagram.edges.iter_mut().find(|e| e.id == edge) else {
+                    return vec![];
+                };
+                if materialize {
+                    e.waypoints = route[1..route.len() - 1].to_vec();
+                    e.waypoints.dedup();
+                }
+                let at = index.min(e.waypoints.len());
+                e.waypoints.insert(at, Point::new(x, y));
+                self.state.diagram.touch();
+                self.changed("Bend point added")
+            }
+            Input::MoveWaypoint { edge, index, x, y } => {
+                let (x, y) = self.snap(x, y);
+                let d = &mut self.state.diagram;
+                let Some(w) = d
+                    .edges
+                    .iter_mut()
+                    .find(|e| e.id == edge)
+                    .and_then(|e| e.waypoints.get_mut(index))
+                else {
+                    return vec![];
+                };
+                *w = Point::new(x, y);
+                d.touch();
+                self.state.modified = true;
+                vec![]
+            }
+            Input::RemoveWaypoint { edge, index } => {
+                let ok = s
+                    .diagram
+                    .edges
+                    .iter()
+                    .any(|e| e.id == edge && index < e.waypoints.len());
+                if !ok {
+                    return vec![];
+                }
+                self.save_undo();
+                if let Some(e) = self.state.diagram.edges.iter_mut().find(|e| e.id == edge) {
+                    e.waypoints.remove(index);
+                }
+                self.state.diagram.touch();
+                self.changed("Bend point removed")
+            }
+        }
+    }
+
+    fn set_bounds(&mut self, id: &str, x: f64, y: f64, width: f64, height: f64) {
+        let d = &mut self.state.diagram;
+        if let Some(n) = d.node_mut(id) {
+            n.x = x;
+            n.y = y;
+            n.width = width.max(MIN_NODE_WIDTH);
+            n.height = height.max(MIN_NODE_HEIGHT);
+            d.touch();
+            self.state.modified = true;
         }
     }
 

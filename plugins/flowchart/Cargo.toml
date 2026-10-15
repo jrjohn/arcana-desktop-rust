@@ -17,6 +17,7 @@ quick-xml.workspace = true
 flate2.workspace = true
 percent-encoding.workspace = true
 egui.workspace = true
+egui-phosphor.workspace = true
 semver.workspace = true
 
 [dev-dependencies]

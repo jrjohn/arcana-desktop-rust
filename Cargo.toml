@@ -52,6 +52,9 @@ flate2 = "1"
 percent-encoding = "2"
 wasmtime = { version = "49", default-features = false, features = ["runtime", "cranelift", "component-model", "std", "anyhow"] }
 wat = "1"
+egui-phosphor = { version = "0.14", default-features = false, features = ["regular"] }
+# xdg-portal only on Linux: no GTK system dependency; falls back to a path prompt without a portal.
+rfd = { version = "0.17", default-features = false, features = ["xdg-portal"] }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

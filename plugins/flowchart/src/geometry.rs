@@ -248,6 +248,94 @@ pub fn outline(n: &DiagramNode) -> Vec<Point> {
     }
 }
 
+/// Signed area (shoelace); positive = counter-clockwise in a y-up frame.
+fn signed_area(pts: &[Point]) -> f64 {
+    let n = pts.len();
+    (0..n)
+        .map(|i| {
+            let (a, b) = (pts[i], pts[(i + 1) % n]);
+            a.x * b.y - b.x * a.y
+        })
+        .sum::<f64>()
+        / 2.0
+}
+
+fn cross(o: Point, a: Point, b: Point) -> f64 {
+    (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x)
+}
+
+fn in_triangle(p: Point, a: Point, b: Point, c: Point) -> bool {
+    let (d1, d2, d3) = (cross(a, b, p), cross(b, c, p), cross(c, a, p));
+    let neg = d1 < 0.0 || d2 < 0.0 || d3 < 0.0;
+    let pos = d1 > 0.0 || d2 > 0.0 || d3 > 0.0;
+    !(neg && pos)
+}
+
+/// Ear-clipping triangulation of a simple polygon (convex or concave, either winding).
+/// Returns index triples into `pts`; duplicate closing points are tolerated.
+#[must_use]
+pub fn triangulate(pts: &[Point]) -> Vec<[usize; 3]> {
+    const EPS: f64 = 1e-9;
+    let mut idx: Vec<usize> = Vec::with_capacity(pts.len());
+    for (i, p) in pts.iter().enumerate() {
+        let dup = idx
+            .last()
+            .is_some_and(|&j: &usize| (pts[j].x - p.x).abs() < EPS && (pts[j].y - p.y).abs() < EPS);
+        if !dup {
+            idx.push(i);
+        }
+    }
+    while idx.len() > 3 {
+        let (f, l) = (pts[idx[0]], pts[idx[idx.len() - 1]]);
+        if (f.x - l.x).abs() < EPS && (f.y - l.y).abs() < EPS {
+            idx.pop();
+        } else {
+            break;
+        }
+    }
+    let poly: Vec<Point> = idx.iter().map(|&i| pts[i]).collect();
+    let ccw = signed_area(&poly) > 0.0;
+    let mut out = Vec::new();
+    let mut guard = 0;
+    while idx.len() > 3 && guard < pts.len() * pts.len() + 8 {
+        guard += 1;
+        let n = idx.len();
+        let mut clipped = false;
+        for i in 0..n {
+            let (ip, ic, inx) = (idx[(i + n - 1) % n], idx[i], idx[(i + 1) % n]);
+            let (a, b, c) = (pts[ip], pts[ic], pts[inx]);
+            let cr = cross(a, b, c);
+            let convex = if ccw { cr > EPS } else { cr < -EPS };
+            if cr.abs() <= EPS {
+                // Collinear vertex: drop it without emitting a triangle.
+                idx.remove(i);
+                clipped = true;
+                break;
+            }
+            if !convex {
+                continue;
+            }
+            let blocked = idx
+                .iter()
+                .any(|&j| j != ip && j != ic && j != inx && in_triangle(pts[j], a, b, c));
+            if blocked {
+                continue;
+            }
+            out.push([ip, ic, inx]);
+            idx.remove(i);
+            clipped = true;
+            break;
+        }
+        if !clipped {
+            break;
+        }
+    }
+    if idx.len() == 3 {
+        out.push([idx[0], idx[1], idx[2]]);
+    }
+    out
+}
+
 /// Parses `#RRGGBB` / `#AARRGGBB` into RGBA bytes.
 #[must_use]
 pub fn parse_color(hex: &str) -> Option<[u8; 4]> {
@@ -335,6 +423,150 @@ mod tests {
                 Point::new(0.0, 0.0)
             ),
             5.0
+        );
+    }
+    fn tri_area(pts: &[Point], t: [usize; 3]) -> f64 {
+        signed_area(&[pts[t[0]], pts[t[1]], pts[t[2]]]).abs()
+    }
+
+    #[test]
+    fn ear_clipping_covers_concave_outlines_exactly() {
+        for shape in [
+            NodeShape::Star,
+            NodeShape::Arrow,
+            NodeShape::Callout,
+            NodeShape::Cloud,
+            NodeShape::Document,
+            NodeShape::Ellipse,
+            NodeShape::Diamond,
+        ] {
+            let n = DiagramNode {
+                shape,
+                ..DiagramNode::default()
+            };
+            let pts = outline(&n);
+            let tris = triangulate(&pts);
+            assert!(!tris.is_empty(), "{shape:?}");
+            let sum: f64 = tris.iter().map(|t| tri_area(&pts, *t)).sum();
+            let mut poly = pts.clone();
+            if poly.len() > 1 && poly[0] == poly[poly.len() - 1] {
+                poly.pop();
+            }
+            let area = signed_area(&poly).abs();
+            assert!(
+                (sum - area).abs() < area * 1e-6,
+                "{shape:?}: {sum} vs {area}"
+            );
+        }
+    }
+
+    #[test]
+    fn ear_clipping_handles_both_windings_and_degenerate_input() {
+        let sq = [
+            Point::new(0.0, 0.0),
+            Point::new(1.0, 0.0),
+            Point::new(1.0, 1.0),
+            Point::new(0.0, 1.0),
+        ];
+        assert_eq!(triangulate(&sq).len(), 2);
+        let mut rev = sq;
+        rev.reverse();
+        assert_eq!(triangulate(&rev).len(), 2);
+        assert!(triangulate(&sq[..2]).is_empty());
+        // L-shape: the reflex corner must not get an ear across it.
+        let l = [
+            Point::new(0.0, 0.0),
+            Point::new(2.0, 0.0),
+            Point::new(2.0, 1.0),
+            Point::new(1.0, 1.0),
+            Point::new(1.0, 2.0),
+            Point::new(0.0, 2.0),
+        ];
+        let sum: f64 = triangulate(&l).iter().map(|t| tri_area(&l, *t)).sum();
+        assert!((sum - 3.0).abs() < 1e-9);
+    }
+}
+
+/// Node bounds `(x, y, width, height)`.
+pub type Bounds = (f64, f64, f64, f64);
+
+/// The eight resize handles of a box, clockwise from top-left:
+/// TL, T, TR, R, BR, B, BL, L.
+#[must_use]
+#[allow(clippy::many_single_char_names)]
+pub fn resize_handles((x, y, w, h): Bounds) -> [Point; 8] {
+    let (cx, cy, r, b) = (x + w / 2.0, y + h / 2.0, x + w, y + h);
+    [
+        Point::new(x, y),
+        Point::new(cx, y),
+        Point::new(r, y),
+        Point::new(r, cy),
+        Point::new(r, b),
+        Point::new(cx, b),
+        Point::new(x, b),
+        Point::new(x, cy),
+    ]
+}
+
+/// New bounds after dragging handle `handle` (index into [`resize_handles`]) by `(dx, dy)`.
+/// The opposite side stays fixed and the size never drops below `min`.
+#[must_use]
+pub fn resize_bounds(orig: Bounds, handle: usize, dx: f64, dy: f64, min: (f64, f64)) -> Bounds {
+    let (x, y, w, h) = orig;
+    let (mut left, mut top, mut right, mut bottom) = (x, y, x + w, y + h);
+    let moves_left = matches!(handle, 0 | 6 | 7);
+    let moves_right = matches!(handle, 2..=4);
+    let moves_top = matches!(handle, 0..=2);
+    let moves_bottom = matches!(handle, 4..=6);
+    if moves_left {
+        left = (left + dx).min(right - min.0);
+    }
+    if moves_right {
+        right = (right + dx).max(left + min.0);
+    }
+    if moves_top {
+        top = (top + dy).min(bottom - min.1);
+    }
+    if moves_bottom {
+        bottom = (bottom + dy).max(top + min.1);
+    }
+    (left, top, right - left, bottom - top)
+}
+
+#[cfg(test)]
+mod handle_tests {
+    #![allow(clippy::float_cmp)]
+    use super::*;
+
+    #[test]
+    fn handles_and_resize_keep_the_opposite_side() {
+        let b = (10.0, 20.0, 100.0, 50.0);
+        let hs = resize_handles(b);
+        assert_eq!(hs[0], Point::new(10.0, 20.0));
+        assert_eq!(hs[4], Point::new(110.0, 70.0));
+        assert_eq!(hs[7], Point::new(10.0, 45.0));
+        let min = (40.0, 30.0);
+        assert_eq!(
+            resize_bounds(b, 4, 20.0, 10.0, min),
+            (10.0, 20.0, 120.0, 60.0)
+        );
+        assert_eq!(
+            resize_bounds(b, 0, -10.0, -5.0, min),
+            (0.0, 15.0, 110.0, 55.0)
+        );
+        // Too small: clamps against the fixed side.
+        assert_eq!(
+            resize_bounds(b, 0, 500.0, 500.0, min),
+            (70.0, 40.0, 40.0, 30.0)
+        );
+        // Edge handles move one axis only.
+        assert_eq!(
+            resize_bounds(b, 1, 99.0, -10.0, min),
+            (10.0, 10.0, 100.0, 60.0)
+        );
+        assert_eq!(
+            resize_bounds(b, 3, 5.0, 99.0, min),
+            (10.0, 20.0, 105.0, 50.0)
         );
     }
 }

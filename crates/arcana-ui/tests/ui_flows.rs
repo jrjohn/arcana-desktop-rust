@@ -273,7 +273,7 @@ fn flowchart_opens_from_tools_menu_and_edits_with_undo() {
         other => panic!("{other:?}"),
     };
     assert_eq!(nodes(&mut h), 0);
-    h.get_by_label("Add Node").click();
+    h.get_by_label("Rectangle").click();
     h.run_steps(2);
     assert_eq!(nodes(&mut h), 1);
     h.get_by_label("Undo").click();

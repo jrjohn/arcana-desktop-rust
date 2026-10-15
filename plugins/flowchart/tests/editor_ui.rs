@@ -79,13 +79,13 @@ fn click(h: &mut Harness<'_, EditorViewModel>, at: Pos2) {
 }
 
 #[test]
-fn add_node_via_toolbar_then_undo_redo() {
+fn add_node_via_palette_then_undo_redo() {
     let mut h = harness(EditorViewModel::new());
-    h.get_by_label("Add Node").click();
+    h.get_by_label("Rectangle").click();
     h.run();
     assert_eq!(h.state().state.diagram.nodes.len(), 1);
     assert!(h.state().state.selected_node.is_some());
-    h.get_by_label("Add Node").click();
+    h.get_by_label("Rectangle").click();
     h.run();
     assert_eq!(h.state().state.diagram.nodes.len(), 2);
     h.get_by_label("Undo").click();
@@ -147,13 +147,13 @@ fn connect_mode_drag_creates_edge() {
 #[test]
 fn sample_renders_and_zoom_buttons_work() {
     let mut h = harness(EditorViewModel::with_diagram(Diagram::create_sample()));
-    h.get_by_label("+").click();
+    h.get_by_label("Zoom In").click();
     h.run();
     assert!((h.state().state.zoom - 1.1).abs() < 1e-9);
-    h.get_by_label("100%").click();
+    h.get_by_label("Reset Zoom").click();
     h.run();
     assert!((h.state().state.zoom - 1.0).abs() < 1e-9);
-    assert!(h.query_by_label_contains("Nodes: 6").is_some());
+    assert!(h.query_by_label_contains("6 nodes, 6 edges").is_some());
 }
 
 #[test]
@@ -176,4 +176,101 @@ fn click_selects_node_and_edge_and_empty_clears() {
     );
     click(&mut h, origin + egui::vec2(30.0, 30.0));
     assert!(!h.state().state.has_selection());
+}
+
+#[test]
+fn palette_drag_drops_shape_on_canvas() {
+    let mut h = harness(EditorViewModel::new());
+    let origin = locate(&mut h);
+    let from = h.get_by_label("Star").rect().center();
+    press_drag_release(&mut h, from, origin + egui::vec2(300.0, 300.0));
+    let d = &h.state().state.diagram;
+    assert_eq!(d.nodes.len(), 1, "dropped");
+    assert_eq!(d.nodes[0].shape, arcana_plugin_flowchart::NodeShape::Star);
+    assert!(d.nodes[0].x > 200.0 && d.nodes[0].y > 200.0);
+}
+
+#[test]
+fn resize_handle_drag_resizes_with_one_undo() {
+    let mut vm = EditorViewModel::new();
+    vm.on(Input::AddNode(None)); // (100,100) 120x60, selected
+    let mut h = harness(vm);
+    let origin = locate(&mut h);
+    // Bottom-right handle at (220,160).
+    press_drag_release(
+        &mut h,
+        origin + egui::vec2(220.0, 160.0),
+        origin + egui::vec2(281.0, 201.0),
+    );
+    let n = &h.state().state.diagram.nodes[0];
+    assert_eq!((n.x, n.y), (100.0, 100.0), "top-left fixed");
+    assert!(
+        n.width > 170.0 && n.height > 90.0,
+        "{}x{}",
+        n.width,
+        n.height
+    );
+    h.get_by_label("Undo").click();
+    h.run();
+    let n = &h.state().state.diagram.nodes[0];
+    assert_eq!((n.width, n.height), (120.0, 60.0));
+}
+
+#[test]
+fn dragging_segment_midpoint_adds_a_bend() {
+    let mut vm = EditorViewModel::new();
+    vm.on(Input::AddNode(None)); // (100,100)
+    vm.on(Input::AddNodeAt {
+        shape: arcana_plugin_flowchart::NodeShape::Rectangle,
+        x: 400.0,
+        y: 100.0,
+    });
+    let (src, dst) = (
+        vm.state.diagram.nodes[0].id.clone(),
+        vm.state.diagram.nodes[1].id.clone(),
+    );
+    vm.on(Input::AddConnection {
+        source: src,
+        target: dst,
+        source_point: arcana_plugin_flowchart::model::ConnectionPoint::Right,
+        target_point: arcana_plugin_flowchart::model::ConnectionPoint::Left,
+    });
+    let mut h = harness(vm);
+    let origin = locate(&mut h);
+    // Straight edge (220,130)→(400,130): midpoint (310,130).
+    press_drag_release(
+        &mut h,
+        origin + egui::vec2(310.0, 130.0),
+        origin + egui::vec2(310.0, 230.0),
+    );
+    let e = &h.state().state.diagram.edges[0];
+    assert!(!e.waypoints.is_empty(), "bend added");
+    let w = *e
+        .waypoints
+        .iter()
+        .find(|w| w.y > 200.0)
+        .expect("a bend was dragged down");
+    assert!(w.y > 200.0, "bend dragged: {w:?}");
+}
+
+#[test]
+fn diagram_properties_show_when_nothing_selected() {
+    let mut h = harness(EditorViewModel::new());
+    assert!(h.query_by_label("Diagram Name").is_some());
+    eprintln!(
+        "{:?} canvas {:?} rect {:?} name {:?}",
+        h.get_by_label("Show Grid").rect(),
+        h.get_by_label("FlowChart canvas").rect(),
+        h.get_by_label("Rectangle").rect(),
+        h.get_by_label("Diagram Name").rect()
+    );
+    h.get_by_label("Show Grid").click();
+    h.run();
+    assert!(!h.state().state.diagram.show_grid);
+    h.get_by_label("Snap to Grid").click();
+    h.run();
+    assert_eq!(
+        h.state().state.diagram.snap_to_grid,
+        !EditorViewModel::new().state.diagram.snap_to_grid
+    );
 }

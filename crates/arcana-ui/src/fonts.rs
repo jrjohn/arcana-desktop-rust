@@ -30,6 +30,7 @@ pub const CANDIDATES: &[&str] = &[
 #[must_use]
 pub fn with_fallback(bytes: Vec<u8>) -> FontDefinitions {
     let mut fonts = FontDefinitions::default();
+    arcana_plugin_flowchart::ui::add_icon_font(&mut fonts);
     fonts
         .font_data
         .insert("cjk".to_owned(), Arc::new(FontData::from_owned(bytes)));
@@ -54,6 +55,9 @@ pub fn install_from(ctx: &egui::Context, candidates: &[&str]) -> Option<PathBuf>
         }
     }
     tracing::warn!("no CJK system font found; zh-TW / ja-JP text will not render");
+    let mut fonts = FontDefinitions::default();
+    arcana_plugin_flowchart::ui::add_icon_font(&mut fonts);
+    ctx.set_fonts(fonts);
     None
 }
 
