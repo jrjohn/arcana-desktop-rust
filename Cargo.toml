@@ -44,6 +44,9 @@ tracing-appender = "0.2"
 dirs = "5"
 tempfile = "3"
 proptest = "1"
+quick-xml = "0.39"
+flate2 = "1"
+percent-encoding = "2"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
