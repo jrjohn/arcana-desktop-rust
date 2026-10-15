@@ -90,6 +90,34 @@ pipeline {
                                 }
                             }
                         }
+                        stage('Architecture Qube') {
+                            // Blocking, threshold 90 — same recipe as arcana-cloud-rust: copy the source IN via a
+                            // tar stream (a -v bind of $WORKSPACE would resolve on the host and scan an empty
+                            // tree) and the report OUT with docker cp. AQ_FRAMEWORK moves to rust-desktop once
+                            // arch-qube ships that profile: the backend `rust` profile has no view/viewmodel
+                            // layer, so its UI rules pass vacuously here (arcana-ui is never classified).
+                            environment { AQ_FRAMEWORK = 'rust' }
+                            steps {
+                                sh '''
+                                    AQ="arcana-arch-qube-desktop-${BUILD_NUMBER}"
+                                    docker rm -f "$AQ" 2>/dev/null || true
+                                    docker create --name "$AQ" --network devops_default -v /src -v /output \
+                                        arcana.boo/arcana/arch-qube:latest \
+                                        scan /src --framework "$AQ_FRAMEWORK" --no-ai --ci \
+                                        --format json,markdown -o /output --threshold 90 || exit 1
+                                    tar --exclude=./.git --exclude=./target --exclude=./.scannerwork \
+                                        --exclude=./arch-qube-reports -C . -cf - . | docker cp - "$AQ":/src || exit 1
+                                    docker start -a "$AQ"
+                                    AQ_RC=$?
+                                    mkdir -p arch-qube-reports
+                                    docker cp "$AQ":/output/. arch-qube-reports/ 2>/dev/null || true
+                                    docker rm -f "$AQ" 2>/dev/null || true
+                                    cat arch-qube-reports/arch-qube.md 2>/dev/null | head -40 || true
+                                    exit $AQ_RC
+                                '''
+                            }
+                            post { always { archiveArtifacts artifacts: 'arch-qube-reports/*', allowEmptyArchive: true } }
+                        }
                     }
                     post { always { sh 'docker rmi "$IMG" "$GUI_IMG" >/dev/null 2>&1 || true' } }
                 }
