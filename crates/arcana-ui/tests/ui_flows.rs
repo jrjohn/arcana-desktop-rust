@@ -39,7 +39,11 @@ fn harness() -> (Harness<'static, Shell>, Env) {
         arcana_infra::seed::seed_demo_data(&s).await.unwrap();
         s
     });
-    let ui = UiServices::from_arcana(&svc, Arc::new(ProbeNetworkMonitor::new(StaticProbe(true))));
+    let ui = UiServices::from_arcana(
+        &svc,
+        Arc::new(ProbeNetworkMonitor::new(StaticProbe(true))),
+        dir.path(),
+    );
     ui.app_settings.set_language_code("en-US");
     let shell = Shell::new(ui, rt.handle().clone());
     let mut h = Harness::builder()
@@ -189,12 +193,90 @@ fn plugin_manager_lists_built_ins_and_menus_work() {
     h.get_by_label("Order Module").click();
     h.run_steps(2);
     assert!(h.query_all_by_label("arcana.module.order").next().is_some());
-    // Menu bar → Business → product list goes through the command registry.
-    h.get_by_role_and_label(egui::accesskit::Role::Button, "Business")
-        .click();
-    h.run_steps(2);
+    // Menu bar (built from the plugin MenuRegistry) → Business → Product → Product
+    // Management runs the Product plugin's `product.list` command.
+    open_menu(&mut h, &["Business", "Product"]);
     h.get_by_label("Product Management").click();
     settle(&mut h);
     assert_eq!(h.state().focused_route(), Some(Route::ProductList));
     assert!(h.query_all_by_label("P001").next().is_some());
+}
+
+/// Click through nested menu buttons.
+fn open_menu(h: &mut Harness<'_, Shell>, path: &[&str]) {
+    for (i, label) in path.iter().enumerate() {
+        if i == 0 {
+            h.get_by_role_and_label(egui::accesskit::Role::Button, label)
+                .click();
+        } else {
+            // Sub-menu buttons carry a "⏵" suffix and open on click/hover.
+            h.get_by_label(&format!("{label} ⏵")).click();
+        }
+        h.run_steps(4);
+    }
+}
+
+fn has_menu(h: &Harness<'_, Shell>, id: &str) -> bool {
+    fn walk(nodes: &[arcana_ui::shell::plugins::MenuNode], id: &str) -> bool {
+        nodes
+            .iter()
+            .any(|n| n.item.id == id || walk(&n.children, id))
+    }
+    walk(&h.state().plugin_menu(), id)
+}
+
+#[test]
+fn plugin_manager_deactivate_and_activate_change_state_and_menus() {
+    use arcana_plugin_api::PluginState;
+    let (mut h, _env) = harness();
+    let state = |h: &Harness<'_, Shell>| {
+        h.state()
+            .services()
+            .plugins
+            .host
+            .state("arcana.module.order")
+    };
+    assert_eq!(state(&h), PluginState::Active);
+    assert!(has_menu(&h, "menu.business.order"));
+    h.get_by_label_contains("Plugin Manager").click();
+    settle(&mut h);
+    h.get_by_label("Order Module").click();
+    settle(&mut h);
+    h.get_by_label("Deactivate").click();
+    settle(&mut h);
+    assert_eq!(state(&h), PluginState::Deactivated);
+    assert!(!has_menu(&h, "menu.business.order"));
+    assert!(
+        h.query_all_by_label("Plugin deactivated successfully")
+            .next()
+            .is_some()
+    );
+    h.get_by_label("Activate").click();
+    settle(&mut h);
+    assert_eq!(state(&h), PluginState::Active);
+    assert!(has_menu(&h, "menu.business.order"));
+}
+
+#[test]
+fn flowchart_opens_from_tools_menu_and_edits_with_undo() {
+    let (mut h, _env) = harness();
+    open_menu(&mut h, &["Tools", "FlowChart"]);
+    h.get_by_label("New FlowChart").click();
+    settle(&mut h);
+    assert!(matches!(
+        h.state().focused_route(),
+        Some(Route::FlowChart { .. })
+    ));
+    let tab = h.state().focused_tab().unwrap();
+    let nodes = |h: &mut Harness<'_, Shell>| match h.state_mut().page_mut(tab) {
+        Some(Page::FlowChart(vm)) => vm.editor.state.diagram.nodes.len(),
+        other => panic!("{other:?}"),
+    };
+    assert_eq!(nodes(&mut h), 0);
+    h.get_by_label("Add Node").click();
+    h.run_steps(2);
+    assert_eq!(nodes(&mut h), 1);
+    h.get_by_label("Undo").click();
+    h.run_steps(2);
+    assert_eq!(nodes(&mut h), 0);
 }

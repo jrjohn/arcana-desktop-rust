@@ -12,6 +12,7 @@ arcana-data.workspace = true
 arcana-sync.workspace = true
 arcana-plugin-api.workspace = true
 arcana-plugin-host.workspace = true
+semver.workspace = true
 async-trait.workspace = true
 chrono.workspace = true
 serde.workspace = true

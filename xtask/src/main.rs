@@ -16,8 +16,11 @@ fn allowed() -> BTreeMap<&'static str, &'static [&'static str]> {
         ("arcana-plugin-api", &["arcana-core"][..]),
         (
             "arcana-plugin-host",
-            &["arcana-core", "arcana-plugin-api"][..],
+            &["arcana-core", "arcana-plugin-api", "arcana-plugin-wasm"][..],
         ),
+        // wasm: the third-party sandbox sees only core; the host maps manifest permissions
+        // onto its `Grants` (M5).
+        ("arcana-plugin-wasm", &["arcana-core"][..]),
         (
             "arcana-infra",
             &[
@@ -29,15 +32,27 @@ fn allowed() -> BTreeMap<&'static str, &'static [&'static str]> {
                 "arcana-plugin-host",
             ][..],
         ),
-        // ui: view models work on domain entities and validators (M4).
+        // ui: view models work on domain entities and validators (M4). M5: the shell draws
+        // plugin contributions (menus, views, the plugin manager) from the plugin host and hosts
+        // the FlowChart editor as a document tab.
         (
             "arcana-ui",
-            &["arcana-core", "arcana-domain", "arcana-infra"][..],
+            &[
+                "arcana-core",
+                "arcana-domain",
+                "arcana-infra",
+                "arcana-plugin-api",
+                "arcana-plugin-host",
+                "arcana-plugin-flowchart",
+            ][..],
         ),
         // app: the composition root wires infra services and the database before handing
         // them to the shell (M4).
         ("arcana-app", &["arcana-ui", "arcana-infra"][..]),
-        ("arcana-plugin-flowchart", &["arcana-plugin-api"][..]),
+        (
+            "arcana-plugin-flowchart",
+            &["arcana-core", "arcana-plugin-api"][..],
+        ),
         ("xtask", &[][..]),
     ])
 }

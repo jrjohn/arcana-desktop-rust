@@ -57,7 +57,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         arcana_infra::seed::seed_demo_data(&s).await?;
         Ok::<_, arcana_infra::AppError>(s)
     })?;
-    let ui = UiServices::from_arcana(&svc, Arc::new(ProbeNetworkMonitor::new(StaticProbe(true))));
+    let ui = UiServices::from_arcana(
+        &svc,
+        Arc::new(ProbeNetworkMonitor::new(StaticProbe(true))),
+        &tmp,
+    );
     ui.app_settings.set_language_code("en-US");
     ui.app_settings.set_theme_id("ForestGreen");
     let shell = Shell::new(ui, rt.handle().clone());
@@ -114,13 +118,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let pm = h.state().focused_tab().ok_or("no tab")?;
     h.state_mut().send(
         pm,
-        PageMsg::PluginManager(plugin_manager::Input::Select("arcana.module.order")),
+        PageMsg::PluginManager(plugin_manager::Input::Select("arcana.module.order".into())),
     );
     h.state_mut().send(
         pm,
         PageMsg::PluginManager(plugin_manager::Input::CheckAllHealth),
     );
     save(&mut h, &dir, "plugin-manager")?;
+
+    // FlowChart plugin: Tools → FlowChart → Sample FlowChart opens the editor tab.
+    h.state_mut().run_plugin_command("flowchart.sample");
+    save(&mut h, &dir, "flowchart")?;
 
     h.state_mut().execute(CommandId::Settings);
     save(&mut h, &dir, "settings")?;

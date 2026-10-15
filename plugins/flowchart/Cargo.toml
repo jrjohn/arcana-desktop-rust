@@ -1,12 +1,27 @@
 [package]
 name = "arcana-plugin-flowchart"
-description = "Flow chart editor plugin (C# plugins/FlowChartModule). Milestone 5."
+description = "Flow chart editor plugin (C# plugins/FlowChartModule): diagram model, draw.io I/O, egui canvas"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 
 [dependencies]
+arcana-core.workspace = true
 arcana-plugin-api.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+uuid.workspace = true
+chrono = { workspace = true, features = ["serde"] }
+base64.workspace = true
+quick-xml.workspace = true
+flate2.workspace = true
+percent-encoding.workspace = true
+egui.workspace = true
+semver.workspace = true
+
+[dev-dependencies]
+egui_kittest.workspace = true
+tempfile.workspace = true
 
 [lints]
 workspace = true

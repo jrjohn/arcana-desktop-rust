@@ -1,6 +1,10 @@
 //! The services the UI talks to, cloned into async tasks.
 
+use std::path::Path;
 use std::sync::Arc;
+
+use arcana_infra::plugin_runtime::PluginRuntime;
+use arcana_plugin_flowchart::plugin::FlowChartPlugin;
 
 use arcana_core::network::NetworkMonitor;
 use arcana_domain::services::{CustomerService, OrderService, ProductService};
@@ -17,6 +21,7 @@ pub struct UiServices {
     pub app_settings: Arc<AppSettingsService>,
     pub settings: Arc<dyn SettingsService>,
     pub network: Arc<dyn NetworkMonitor>,
+    pub plugins: PluginRuntime,
 }
 
 impl std::fmt::Debug for UiServices {
@@ -26,10 +31,22 @@ impl std::fmt::Debug for UiServices {
 }
 
 impl UiServices {
-    /// Take the UI-facing services out of the wired graph.
+    /// Take the UI-facing services out of the wired graph and start the plugin runtime
+    /// (built-ins + `FlowChart`, plus third-party plugins installed under `plugins_root`).
     #[must_use]
-    pub fn from_arcana(s: &ArcanaServices, network: Arc<dyn NetworkMonitor>) -> Self {
+    pub fn from_arcana(
+        s: &ArcanaServices,
+        network: Arc<dyn NetworkMonitor>,
+        plugins_root: &Path,
+    ) -> Self {
+        let plugins = PluginRuntime::start(
+            &s.db,
+            s.localization.clone(),
+            plugins_root,
+            vec![Box::new(FlowChartPlugin::default())],
+        );
         Self {
+            plugins,
             orders: s.orders.clone(),
             customers: s.customers.clone(),
             products: s.products.clone(),

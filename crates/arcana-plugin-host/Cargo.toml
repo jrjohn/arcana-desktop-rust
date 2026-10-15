@@ -8,6 +8,18 @@ license.workspace = true
 [dependencies]
 arcana-core.workspace = true
 arcana-plugin-api.workspace = true
+arcana-plugin-wasm.workspace = true
+async-trait.workspace = true
+chrono.workspace = true
+inventory.workspace = true
+semver.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread", "time"] }
+tempfile.workspace = true
 
 [lints]
 workspace = true

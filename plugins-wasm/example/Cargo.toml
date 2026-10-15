@@ -1,0 +1,20 @@
+[package]
+name = "arcana-wasm-example"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+# Built outside the host workspace (scripts/build-wasm-example.sh):
+# wasm32-unknown-unknown core module -> `wasm-tools component new`. No WASI, so the
+# component imports nothing but the four arcana:plugin host interfaces.
+[workspace]
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wit-bindgen = { version = "0.51", default-features = false, features = ["macros", "realloc"] }
+
+[profile.release]
+opt-level = "s"
+panic = "abort"

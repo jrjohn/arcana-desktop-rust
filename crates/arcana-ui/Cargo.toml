@@ -9,6 +9,9 @@ license.workspace = true
 arcana-core.workspace = true
 arcana-domain.workspace = true
 arcana-infra.workspace = true
+arcana-plugin-api.workspace = true
+arcana-plugin-host.workspace = true
+arcana-plugin-flowchart = { path = "../../plugins/flowchart" }
 egui.workspace = true
 egui_dock.workspace = true
 tokio = { workspace = true, features = ["rt", "sync"] }

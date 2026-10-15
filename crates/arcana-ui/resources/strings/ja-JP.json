@@ -68,5 +68,10 @@
   "ui.plugins.status": "ステータス：",
   "ui.plugins.errorCount": "エラー数：",
   "ui.plugins.versions": "バージョン管理",
-  "ui.plugins.runtimeNote": "プラグインランタイム（マイルストーン5）が必要です。組み込みプラグインは常に有効です。"
+  "ui.plugins.runtimeNote": "プラグインランタイム（マイルストーン5）が必要です。組み込みプラグインは常に有効です。",
+  "ui.plugins.approve": "権限を承認",
+  "ui.plugins.packagePath": "プラグインパッケージのフォルダー...",
+  "ui.plugins.pendingPermissions": "承認待ちの権限: {0}",
+  "ui.plugins.permissions": "権限:",
+  "ui.plugins.settings": "設定"
 }

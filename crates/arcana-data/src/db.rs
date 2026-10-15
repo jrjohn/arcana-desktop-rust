@@ -179,7 +179,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn migrations_create_the_thirteen_tables() {
+    /// 13 app tables (M2) + the 3 plugin tables of C# `PluginDbContext` (M5).
+    async fn migrations_create_the_sixteen_tables() {
         let db = Db::in_memory().await.unwrap();
         let mut c = db.lock().await.unwrap();
         let names: Vec<(String,)> = sqlx::query_as(
@@ -198,6 +199,9 @@ mod tests {
                 "OrderItems",
                 "Orders",
                 "Permissions",
+                "PluginHealthSnapshots",
+                "PluginMetadata",
+                "PluginVersions",
                 "ProductCategories",
                 "Products",
                 "RolePermissions",

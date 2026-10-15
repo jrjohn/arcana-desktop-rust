@@ -25,6 +25,19 @@ pub enum Route {
     },
     PluginManager,
     Settings,
+    /// `FlowChart` editor (C# `FlowChartEditorPage`, contributed by the `FlowChart` plugin).
+    FlowChart {
+        mode: FlowMode,
+    },
+}
+
+/// C# `EditorArgs` of the `FlowChart` editor route.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum FlowMode {
+    New,
+    Sample,
+    OpenDialog,
+    Open(String),
 }
 
 /// C# `NavGraph.Routes` constants.
@@ -37,6 +50,7 @@ pub mod routes {
     pub const CUSTOMER_DETAIL: &str = "CustomerDetailPage";
     pub const PLUGIN_MANAGER: &str = "PluginManagerPage";
     pub const SETTINGS: &str = "SettingsPage";
+    pub const FLOWCHART: &str = "FlowChartEditorPage";
     pub const DASHBOARD: &str = "DashboardPage";
     /// The side-nav tag of the home item (C# `MainWindow.xaml`).
     pub const HOME: &str = "HomePage";
@@ -56,6 +70,7 @@ impl Route {
             Self::CustomerDetail { .. } => routes::CUSTOMER_DETAIL,
             Self::PluginManager => routes::PLUGIN_MANAGER,
             Self::Settings => routes::SETTINGS,
+            Self::FlowChart { .. } => routes::FLOWCHART,
         }
     }
 
@@ -76,6 +91,9 @@ impl Route {
             routes::CUSTOMER_DETAIL => Self::CustomerDetail { id: None },
             routes::PLUGIN_MANAGER => Self::PluginManager,
             routes::SETTINGS => Self::Settings,
+            routes::FLOWCHART => Self::FlowChart {
+                mode: FlowMode::New,
+            },
             _ => return None,
         })
     }
@@ -92,7 +110,10 @@ impl Route {
                 a == b
             }
             (
-                Self::OrderDetail { .. } | Self::ProductDetail { .. } | Self::CustomerDetail { .. },
+                Self::OrderDetail { .. }
+                | Self::ProductDetail { .. }
+                | Self::CustomerDetail { .. }
+                | Self::FlowChart { .. },
                 _,
             ) => false,
             (a, b) => a == b,
@@ -109,6 +130,7 @@ impl Route {
             Self::CustomerList | Self::CustomerDetail { .. } => routes::CUSTOMER_LIST,
             Self::PluginManager => routes::PLUGIN_MANAGER,
             Self::Settings => routes::SETTINGS,
+            Self::FlowChart { .. } => routes::FLOWCHART,
         }
     }
 }
@@ -254,6 +276,9 @@ mod tests {
             Route::CustomerDetail { id: None },
             Route::PluginManager,
             Route::Settings,
+            Route::FlowChart {
+                mode: FlowMode::New,
+            },
         ];
         for r in all {
             assert_eq!(Route::from_id(r.id()), Some(r.clone()), "{r:?}");

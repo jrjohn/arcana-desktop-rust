@@ -15,63 +15,6 @@ use crate::nav::routes;
 use crate::theme;
 use crate::widgets::ViewCx;
 
-/// Menu layout: (title key, items). `None` = separator.
-const MENUS: &[(&str, &[Option<CommandId>])] = &[
-    (
-        "menu.file",
-        &[
-            Some(CommandId::New),
-            Some(CommandId::Open),
-            Some(CommandId::Save),
-            None,
-            Some(CommandId::Exit),
-        ],
-    ),
-    (
-        "menu.edit",
-        &[
-            Some(CommandId::Undo),
-            Some(CommandId::Redo),
-            None,
-            Some(CommandId::Cut),
-            Some(CommandId::Copy),
-            Some(CommandId::Paste),
-        ],
-    ),
-    (
-        "menu.business",
-        &[
-            Some(CommandId::OrderList),
-            Some(CommandId::NewOrder),
-            None,
-            Some(CommandId::CustomerList),
-            Some(CommandId::NewCustomer),
-            None,
-            Some(CommandId::ProductList),
-            Some(CommandId::NewProduct),
-        ],
-    ),
-    (
-        "menu.view",
-        &[
-            Some(CommandId::Refresh),
-            Some(CommandId::Fullscreen),
-            None,
-            Some(CommandId::ToggleSidebar),
-            Some(CommandId::ToggleStatusBar),
-        ],
-    ),
-    ("menu.tools", &[Some(CommandId::Settings)]),
-    (
-        "menu.help",
-        &[Some(CommandId::Docs), Some(CommandId::About)],
-    ),
-    (
-        "menu.system",
-        &[Some(CommandId::PluginManager), Some(CommandId::Settings)],
-    ),
-];
-
 /// Side navigation: (section id, icon, label key, command); `None` rows are headers.
 const NAV_TOP: &[(&str, &str, &str, Option<CommandId>)] = &[
     (routes::HOME, "🏠", "nav.home", Some(CommandId::Home)),
@@ -134,6 +77,7 @@ impl Shell {
             self.theme_dirty = false;
         }
         self.pump();
+        self.pump_plugins();
         for cmd in CommandRegistry::take_shortcuts(&ctx) {
             self.execute(cmd);
         }
@@ -202,36 +146,51 @@ impl Shell {
         }
     }
 
+    fn menu_node(&self, ui: &mut Ui, node: &super::plugins::MenuNode, run: &mut Vec<String>) {
+        for child in &node.children {
+            let m = &child.item;
+            if m.is_separator {
+                ui.separator();
+            } else if !child.children.is_empty() {
+                ui.menu_button(&m.title, |ui| self.menu_node(ui, child, run));
+            } else {
+                let mut b = egui::Button::new(&m.title);
+                if let Some(s) = &m.shortcut {
+                    b = b.shortcut_text(s);
+                }
+                let enabled = m
+                    .command
+                    .as_deref()
+                    .is_some_and(|c| self.plugin_command_enabled(c));
+                if ui.add_enabled(enabled, b).clicked() {
+                    if let Some(c) = &m.command {
+                        run.push(c.clone());
+                    }
+                    ui.close();
+                }
+            }
+        }
+    }
+
+    /// Menu bar built from the plugin `MenuRegistry` (C# `MainWindow.BuildMenus`).
     fn menu_bar(&mut self, ui: &mut Ui, cx: &ViewCx<'_>) {
+        let mut run_named = Vec::new();
         let mut run = Vec::new();
+        let tree = self.plugin_menu();
         egui::MenuBar::new().ui(ui, |ui| {
             ui.label(RichText::new(cx.t("app.name")).strong());
-            for (title, items) in MENUS {
-                ui.menu_button(cx.t(title), |ui| {
-                    for item in *items {
-                        match item {
-                            None => {
-                                ui.separator();
-                            }
-                            Some(cmd) => {
-                                let def = CommandRegistry::get(*cmd);
-                                let mut b = egui::Button::new(cx.t(def.label_key));
-                                if let Some(s) = CommandRegistry::shortcut_text(ui.ctx(), *cmd) {
-                                    b = b.shortcut_text(s);
-                                }
-                                if ui.add_enabled(self.is_enabled(*cmd), b).clicked() {
-                                    run.push(*cmd);
-                                    ui.close();
-                                }
-                            }
-                        }
-                    }
+            for node in &tree {
+                ui.menu_button(&node.item.title, |ui| {
+                    self.menu_node(ui, node, &mut run_named);
                 });
             }
             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                 self.command_search(ui, cx, &mut run);
             });
         });
+        for name in run_named {
+            self.run_plugin_command(&name);
+        }
         for cmd in run {
             self.execute(cmd);
         }
@@ -376,7 +335,7 @@ impl Shell {
     fn floating_windows(&mut self, ctx: &egui::Context, cx: &ViewCx<'_>, out: &mut ViewerOutput) {
         let mut dock_back = Vec::new();
         for tab_id in self.floating.clone() {
-            let Some(tab) = self.tabs.get(&tab_id) else {
+            let Some(tab) = self.tabs.get_mut(&tab_id) else {
                 continue;
             };
             let title = tab.page.title(cx);
