@@ -10,8 +10,9 @@ mod view;
 mod window;
 
 pub use bus::{
-    AnyHandler, AnyRequestHandler, ApplicationEvent, EventAggregator, EventAggregatorExt,
-    MessageBus, MessageBusExt, SharedStateStore, SharedStateStoreExt, StateHandler,
+    AnyHandler, AnyRequestHandler, ApplicationEvent, ApplicationEventBase, EventAggregator,
+    EventAggregatorExt, MessageBus, MessageBusExt, SharedStateStore, SharedStateStoreExt,
+    StateHandler,
 };
 pub use command::{CommandArgs, CommandDefinition, CommandHandler, CommandService};
 pub use localization::{

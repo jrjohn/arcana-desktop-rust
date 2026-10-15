@@ -1,5 +1,7 @@
 //! `IMenuRegistry`, `MenuLocation`, `MenuItemDefinition`.
 
+use arcana_core::AppResult;
+
 use crate::services::Subscription;
 
 /// C# `MenuLocation`.
@@ -107,8 +109,13 @@ impl MenuItemDefinition {
 /// C# `IMenuRegistry`. `MenusChanged` becomes a monotonically increasing
 /// [`MenuRegistry::revision`] the UI polls each frame.
 pub trait MenuRegistry: Send + Sync {
-    fn register_menu_item(&self, item: MenuItemDefinition) -> Subscription;
-    fn register_menu_items(&self, items: Vec<MenuItemDefinition>) -> Subscription;
+    /// # Errors
+    /// Validation failure or duplicate id (C# `ContributionValidationException` /
+    /// `InvalidOperationException`).
+    fn register_menu_item(&self, item: MenuItemDefinition) -> AppResult<Subscription>;
+    /// # Errors
+    /// Validation failure of any item (nothing is registered then).
+    fn register_menu_items(&self, items: Vec<MenuItemDefinition>) -> AppResult<Subscription>;
     fn menu_items(&self, location: MenuLocation) -> Vec<MenuItemDefinition>;
     fn menu_items_for_module(
         &self,
