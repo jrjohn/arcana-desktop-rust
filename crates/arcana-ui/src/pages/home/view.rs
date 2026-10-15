@@ -39,7 +39,15 @@ pub fn show(ui: &mut Ui, state: &State, cx: &ViewCx<'_>) -> Vec<Input> {
         ui.label(RichText::new(cx.t("home.subtitle")).size(20.0));
         ui.add_space(16.0);
         subtitle(ui, &cx.t("home.quickActions"));
-        ui.horizontal(|ui| {
+        ui.horizontal_wrapped(|ui| {
+            for a in &state.quick_actions {
+                if quick_action(ui, cx, &a.icon, &a.title) {
+                    out.push(Input::RunCommand(a.command.clone()));
+                }
+            }
+            if !state.quick_actions.is_empty() {
+                return;
+            }
             for (icon, key, input) in [
                 ("➕", "home.newOrder", Input::NewOrder),
                 ("👤", "home.newCustomer", Input::NewCustomer),

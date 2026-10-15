@@ -3,15 +3,20 @@
 
 use egui::{Align2, Color32, FontId, Mesh, Pos2, Rect, Sense, Shape, Stroke, StrokeKind, Vec2};
 
-use crate::geometry::{edge_path, hit_edge, hit_node, nearest_anchor, outline, parse_color};
+use crate::geometry::{
+    Bounds, edge_path, hit_edge, hit_node, nearest_anchor, outline, parse_color, resize_bounds,
+    resize_handles, triangulate,
+};
 use crate::model::{
     ArrowType, ConnectionPoint, DiagramEdge, DiagramNode, LineStyle, NodeShape, Point,
 };
-use crate::vm::{EditorViewModel, Effect, Input};
+use crate::vm::{EditorViewModel, Effect, Input, MIN_NODE_HEIGHT, MIN_NODE_WIDTH};
 
 const SELECT: Color32 = Color32::from_rgb(0, 120, 215);
 /// Edge pick tolerance in screen points.
 const EDGE_PICK: f64 = 6.0;
+/// Handle pick radius in screen points.
+const HANDLE_PICK: f32 = 7.0;
 
 /// In-progress pointer gesture, kept in egui temp memory between frames.
 #[derive(Debug, Clone, PartialEq)]
@@ -26,6 +31,48 @@ enum Drag {
         to: Pos2,
     },
     Pan,
+    Resize {
+        id: String,
+        handle: usize,
+        orig: Bounds,
+        start: (f64, f64),
+    },
+    Waypoint {
+        edge: String,
+        index: usize,
+    },
+}
+
+/// A handle under the pointer for the current selection.
+enum Grip {
+    Resize(usize),
+    Waypoint(usize),
+    /// Midpoint of path segment `i` (dragging it inserts a bend).
+    Segment(usize, Point),
+}
+
+fn grip_at(vm: &EditorViewModel, view: View, pos: Pos2) -> Option<Grip> {
+    let near = |p: Point| view.to_screen(p).distance(pos) <= HANDLE_PICK;
+    let d = &vm.state.diagram;
+    if let Some(n) = vm.state.selected_node.as_deref().and_then(|id| d.node(id)) {
+        return resize_handles((n.x, n.y, n.width, n.height))
+            .into_iter()
+            .position(near)
+            .map(Grip::Resize);
+    }
+    let e = vm
+        .state
+        .selected_edge
+        .as_deref()
+        .and_then(|id| d.edge(id))?;
+    if let Some(i) = e.waypoints.iter().position(|w| near(*w)) {
+        return Some(Grip::Waypoint(i));
+    }
+    let path = edge_path(d, e)?;
+    path.windows(2).enumerate().find_map(|(i, w)| {
+        let mid = Point::new(f64::midpoint(w[0].x, w[1].x), f64::midpoint(w[0].y, w[1].y));
+        near(mid).then_some(Grip::Segment(i, mid))
+    })
 }
 
 /// Diagram ↔ screen mapping for one frame.
@@ -77,6 +124,17 @@ pub fn show_canvas(ui: &mut egui::Ui, vm: &mut EditorViewModel) -> Vec<Effect> {
         zoom: vm.state.zoom,
     };
     let mut fx = Vec::new();
+    if let Some(shape) = response.dnd_release_payload::<NodeShape>()
+        && let Some(pos) = ui.ctx().pointer_interact_pos()
+    {
+        let p = view.to_diagram(pos);
+        let n = DiagramNode::default();
+        fx.extend(vm.on(Input::AddNodeAt {
+            shape: *shape,
+            x: p.x - n.width / 2.0,
+            y: p.y - n.height / 2.0,
+        }));
+    }
     handle_input(ui, vm, &response, view, &mut fx);
     // Recompute: input may have changed pan/zoom.
     #[allow(clippy::cast_possible_truncation)]
@@ -102,6 +160,15 @@ pub fn show_canvas(ui: &mut egui::Ui, vm: &mut EditorViewModel) -> Vec<Effect> {
     nodes.sort_by_key(|n| n.z_index);
     for n in nodes {
         draw_node(&painter, view, n, vm.state.connect_mode);
+    }
+    draw_grips(&painter, view, vm);
+    if response.dnd_hover_payload::<NodeShape>().is_some() {
+        painter.rect_stroke(
+            rect.shrink(1.0),
+            0.0,
+            Stroke::new(2.0, SELECT),
+            StrokeKind::Inside,
+        );
     }
     if let Some(Drag::Connect { source, point, to }) = ui.data(|m| m.get_temp::<Drag>(response.id))
         && let Some(n) = d.node(&source)
@@ -160,6 +227,13 @@ fn handle_input(
     {
         let p = view.to_diagram(pos);
         let middle = ui.input(|i| i.pointer.middle_down());
+        if !middle
+            && !vm.state.pan_mode
+            && let Some(drag) = start_grip(vm, view, pos, p, fx)
+        {
+            ui.data_mut(|m| m.insert_temp(id, drag));
+            return;
+        }
         let hit =
             hit_node(&vm.state.diagram, p).map(|n| (n.id.clone(), n.x, n.y, nearest_anchor(n, p)));
         let drag = match hit {
@@ -207,6 +281,41 @@ fn handle_input(
                     ui.data_mut(|m| m.insert_temp(id, Drag::Connect { source, point, to }));
                 }
             }
+            Some(Drag::Resize {
+                id: nid,
+                handle,
+                orig,
+                start,
+            }) => {
+                if let Some(pos) = response.interact_pointer_pos() {
+                    let p = view.to_diagram(pos);
+                    let (x, y, width, height) = resize_bounds(
+                        orig,
+                        handle,
+                        p.x - start.0,
+                        p.y - start.1,
+                        (MIN_NODE_WIDTH, MIN_NODE_HEIGHT),
+                    );
+                    fx.extend(vm.on(Input::ResizeNode {
+                        id: nid,
+                        x,
+                        y,
+                        width,
+                        height,
+                    }));
+                }
+            }
+            Some(Drag::Waypoint { edge, index }) => {
+                if let Some(pos) = response.interact_pointer_pos() {
+                    let p = view.to_diagram(pos);
+                    fx.extend(vm.on(Input::MoveWaypoint {
+                        edge,
+                        index,
+                        x: p.x,
+                        y: p.y,
+                    }));
+                }
+            }
             None => {}
         }
     }
@@ -248,7 +357,11 @@ fn handle_input(
         && let Some(pos) = response.interact_pointer_pos()
     {
         let p = view.to_diagram(pos);
-        if hit_node(&vm.state.diagram, p).is_none() {
+        if let (Some(Grip::Waypoint(index)), Some(edge)) =
+            (grip_at(vm, view, pos), vm.state.selected_edge.clone())
+        {
+            fx.extend(vm.on(Input::RemoveWaypoint { edge, index }));
+        } else if hit_node(&vm.state.diagram, p).is_none() {
             let shape = vm.state.selected_shape;
             fx.extend(vm.on(Input::AddNodeAt {
                 shape,
@@ -283,19 +396,105 @@ fn draw_grid(painter: &egui::Painter, rect: Rect, view: View, grid: f64) {
     }
 }
 
-/// Fan-triangulated fill around the bounding-box centre (handles the star-shaped outlines).
-fn fill(painter: &egui::Painter, pts: &[Pos2], center: Pos2, c: Color32) {
+/// Ear-clipped fill: exact for concave outlines (star, arrow, callout, cloud).
+fn fill(painter: &egui::Painter, outline_pts: &[Point], view: View, c: Color32) {
     let mut mesh = Mesh::default();
-    mesh.colored_vertex(center, c);
-    for p in pts {
-        mesh.colored_vertex(*p, c);
+    for p in outline_pts {
+        mesh.colored_vertex(view.to_screen(*p), c);
     }
-    #[allow(clippy::cast_possible_truncation)]
-    let n = pts.len() as u32;
-    for i in 0..n {
-        mesh.add_triangle(0, 1 + i, 1 + (i + 1) % n);
+    for [a, b, d] in triangulate(outline_pts) {
+        #[allow(clippy::cast_possible_truncation)] // outlines have < 100 points
+        mesh.add_triangle(a as u32, b as u32, d as u32);
     }
     painter.add(Shape::mesh(mesh));
+}
+
+fn start_grip(
+    vm: &mut EditorViewModel,
+    view: View,
+    pos: Pos2,
+    p: Point,
+    fx: &mut Vec<Effect>,
+) -> Option<Drag> {
+    match grip_at(vm, view, pos)? {
+        Grip::Resize(handle) => {
+            let id = vm.state.selected_node.clone()?;
+            let n = vm.state.diagram.node(&id)?;
+            let orig = (n.x, n.y, n.width, n.height);
+            fx.extend(vm.on(Input::BeginMove));
+            Some(Drag::Resize {
+                id,
+                handle,
+                orig,
+                start: (p.x, p.y),
+            })
+        }
+        Grip::Waypoint(index) => {
+            let edge = vm.state.selected_edge.clone()?;
+            fx.extend(vm.on(Input::BeginMove));
+            Some(Drag::Waypoint { edge, index })
+        }
+        Grip::Segment(segment, mid) => {
+            let edge = vm.state.selected_edge.clone()?;
+            fx.extend(vm.on(Input::InsertWaypoint {
+                edge: edge.clone(),
+                index: segment,
+                x: mid.x,
+                y: mid.y,
+            }));
+            Some(Drag::Waypoint {
+                edge,
+                index: segment,
+            })
+        }
+    }
+}
+
+fn draw_grips(painter: &egui::Painter, view: View, vm: &EditorViewModel) {
+    let d = &vm.state.diagram;
+    let stroke = Stroke::new(1.0, SELECT);
+    if let Some(n) = vm.state.selected_node.as_deref().and_then(|id| d.node(id)) {
+        for h in resize_handles((n.x, n.y, n.width, n.height)) {
+            painter.rect(
+                Rect::from_center_size(view.to_screen(h), Vec2::splat(8.0)),
+                0.0,
+                Color32::WHITE,
+                stroke,
+                StrokeKind::Middle,
+            );
+        }
+    }
+    let Some(e) = vm.state.selected_edge.as_deref().and_then(|id| d.edge(id)) else {
+        return;
+    };
+    let Some(path) = edge_path(d, e) else {
+        return;
+    };
+    for w in path.windows(2) {
+        let mid = view.to_screen(Point::new(
+            f64::midpoint(w[0].x, w[1].x),
+            f64::midpoint(w[0].y, w[1].y),
+        ));
+        let r = 4.0;
+        painter.add(Shape::convex_polygon(
+            vec![
+                mid + Vec2::new(0.0, -r),
+                mid + Vec2::new(r, 0.0),
+                mid + Vec2::new(0.0, r),
+                mid + Vec2::new(-r, 0.0),
+            ],
+            Color32::WHITE,
+            stroke,
+        ));
+    }
+    for w in &e.waypoints {
+        painter.circle(
+            view.to_screen(*w),
+            5.0,
+            SELECT,
+            Stroke::new(1.0, Color32::WHITE),
+        );
+    }
 }
 
 fn draw_node(painter: &egui::Painter, view: View, n: &DiagramNode, connect_mode: bool) {
@@ -339,8 +538,9 @@ fn draw_node(painter: &egui::Painter, view: View, n: &DiagramNode, connect_mode:
             painter.add(top);
         }
         _ => {
-            let pts: Vec<Pos2> = outline(n).into_iter().map(|p| view.to_screen(p)).collect();
-            fill(painter, &pts, r.center(), fill_c);
+            let out = outline(n);
+            fill(painter, &out, view, fill_c);
+            let pts: Vec<Pos2> = out.into_iter().map(|p| view.to_screen(p)).collect();
             painter.add(Shape::closed_line(pts, stroke));
         }
     }
@@ -396,7 +596,14 @@ fn draw_edge(painter: &egui::Painter, view: View, e: &DiagramEdge, path: &[Point
             painter.extend(Shape::dotted_line(&pts, c, 4.0, stroke.width / 2.0 + 0.5));
         }
         LineStyle::DashDot => {
-            painter.extend(Shape::dashed_line(&pts, stroke, 12.0, 3.0));
+            // Long dash, gap, dot, gap.
+            painter.extend(Shape::dashed_line_with_offset(
+                &pts,
+                stroke,
+                &[12.0, 2.0],
+                &[4.0, 4.0],
+                0.0,
+            ));
         }
     }
     if let [.., a, b] = pts.as_slice() {

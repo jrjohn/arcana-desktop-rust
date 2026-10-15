@@ -162,6 +162,11 @@ pub enum Input {
     Select(String),
     Versions(Vec<String>),
     PackagePathChanged(String),
+    /// Open the native folder picker for the package path (the text box stays as fallback
+    /// where no dialog / portal exists).
+    BrowsePackage,
+    /// Picker result; `None` = cancelled / no dialog available (typed path is kept).
+    PackagePicked(Option<String>),
     RollbackTarget(String),
     Refresh,
     CheckHealth(String),
@@ -177,6 +182,8 @@ pub enum Input {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Task {
     Load,
+    /// Native folder picker (`rfd`) for a plugin package directory.
+    PickPackage,
     Versions(String),
     Op(Op),
     SaveSetting {
@@ -250,6 +257,12 @@ impl ViewModel {
                 s.versions = v;
             }
             Input::PackagePathChanged(p) => s.package_path = p,
+            Input::BrowsePackage => return vec![Effect::Run(Task::PickPackage)],
+            Input::PackagePicked(p) => {
+                if let Some(p) = p {
+                    s.package_path = p;
+                }
+            }
             Input::RollbackTarget(v) => s.rollback_to = Some(v),
             Input::CheckHealth(id) => return self.op(Op::CheckHealth(id)),
             Input::CheckAllHealth => return self.op(Op::CheckAllHealth),
@@ -363,6 +376,14 @@ mod tests {
     fn install_upgrade_rollback_need_inputs() {
         let mut vm = loaded();
         assert!(!vm.state.can(RuntimeAction::Install));
+        assert_eq!(
+            vm.on(Input::BrowsePackage),
+            vec![Effect::Run(Task::PickPackage)]
+        );
+        let _ = vm.on(Input::PackagePicked(Some("/picked".into())));
+        assert_eq!(vm.state.package_path, "/picked");
+        let _ = vm.on(Input::PackagePicked(None));
+        assert_eq!(vm.state.package_path, "/picked");
         let _ = vm.on(Input::PackagePathChanged("/pkg".into()));
         assert_eq!(
             vm.on(Input::Runtime(RuntimeAction::Install)),

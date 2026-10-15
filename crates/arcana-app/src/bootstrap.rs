@@ -30,10 +30,7 @@ impl AppPaths {
 
     #[must_use]
     pub fn database_url(&self) -> String {
-        format!(
-            "sqlite://{}",
-            self.data_dir.join("data").join("arcana.db").display()
-        )
+        arcana_infra::wiring::sqlite_url(&self.data_dir.join("data").join("arcana.db"))
     }
 }
 

@@ -78,6 +78,7 @@ impl Shell {
         }
         self.pump();
         self.pump_plugins();
+        self.sync_contributions();
         for cmd in CommandRegistry::take_shortcuts(&ctx) {
             self.execute(cmd);
         }
@@ -186,6 +187,33 @@ impl Shell {
             }
             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                 self.command_search(ui, cx, &mut run);
+                // C# `QuickActionsFlyout` (title bar) + module page flyouts.
+                let quick = self.contributed(arcana_plugin_api::MenuLocation::QuickAccess, None);
+                if !quick.is_empty()
+                    && let Some(c) = Self::contribution_menu(
+                        ui,
+                        &format!("⚡ {}", cx.t("home.quickActions")),
+                        &quick,
+                    )
+                {
+                    run_named.push(c);
+                }
+                if let Some(module) = self
+                    .focused_route()
+                    .as_ref()
+                    .and_then(super::plugins::module_of)
+                {
+                    let items = self.contributed(
+                        arcana_plugin_api::MenuLocation::ModuleQuickAccess,
+                        Some(module),
+                    );
+                    if !items.is_empty()
+                        && let Some(c) =
+                            Self::contribution_menu(ui, &format!("▾ {}", cx.t("ui.module")), &items)
+                    {
+                        run_named.push(c);
+                    }
+                }
             });
         });
         for name in run_named {
@@ -274,6 +302,55 @@ impl Shell {
         }
     }
 
+    fn contributed_nav_item(&mut self, ui: &mut Ui, item: &super::plugins::Contribution) {
+        let icon = super::plugins::icon_glyph(item.icon.as_deref());
+        let text = if self.sidebar_open {
+            format!("{icon}  {}", item.title)
+        } else {
+            icon.to_owned()
+        };
+        let r = ui
+            .add_sized(
+                [ui.available_width(), 32.0],
+                egui::Button::selectable(false, RichText::new(text).size(15.0))
+                    .frame_when_inactive(false),
+            )
+            .on_hover_text(&item.title);
+        if r.clicked()
+            && let Some(c) = &item.command
+        {
+            self.run_plugin_command(c);
+        }
+    }
+
+    /// A drop-down of contributed items; returns the command picked.
+    fn contribution_menu(
+        ui: &mut Ui,
+        label: &str,
+        items: &[super::plugins::Contribution],
+    ) -> Option<String> {
+        let mut picked = None;
+        ui.menu_button(label, |ui| {
+            for item in items {
+                if item.separator_before {
+                    ui.separator();
+                }
+                let icon = super::plugins::icon_glyph(item.icon.as_deref());
+                if ui
+                    .add_enabled(
+                        item.command.is_some(),
+                        egui::Button::new(format!("{icon}  {}", item.title)),
+                    )
+                    .clicked()
+                {
+                    picked.clone_from(&item.command);
+                    ui.close();
+                }
+            }
+        });
+        picked
+    }
+
     fn side_nav(&mut self, ui: &mut Ui, cx: &ViewCx<'_>) {
         let active = self.focused_route().map_or("", |r| r.nav_section());
         ui.with_layout(Layout::top_down(Align::Min), |ui| {
@@ -299,7 +376,24 @@ impl Shell {
                 self.execute(CommandId::ToggleSidebar);
             }
             ui.add_space(8.0);
+            let existing: Vec<&str> = NAV_TOP
+                .iter()
+                .chain(NAV_BOTTOM)
+                .map(|r| r.0)
+                .filter(|s| !s.is_empty())
+                .collect();
+            let tree = super::plugins::function_tree(
+                &self.svc.plugins.host.services.menus.all_menu_items(),
+                &existing,
+            );
             for row in NAV_TOP {
+                if row.2 == "nav.header.reports" && !tree.is_empty() {
+                    // C# `BuildFunctionTree`: separator + contributed items before Reports.
+                    ui.separator();
+                    for item in &tree {
+                        self.contributed_nav_item(ui, item);
+                    }
+                }
                 self.nav_item(ui, cx, row, active);
             }
             ui.with_layout(Layout::bottom_up(Align::Min), |ui| {
@@ -310,7 +404,8 @@ impl Shell {
         });
     }
 
-    fn status_bar(&self, ui: &mut Ui, cx: &ViewCx<'_>) {
+    fn status_bar(&mut self, ui: &mut Ui, cx: &ViewCx<'_>) {
+        let mut dismiss_font = false;
         ui.horizontal(|ui| {
             let busy = self.exec.in_flight() > 0;
             ui.label(if busy {
@@ -318,6 +413,20 @@ impl Shell {
             } else {
                 cx.t("status.ready")
             });
+            for text in self.status_items.values() {
+                ui.separator();
+                ui.label(text);
+            }
+            if self.font_warning {
+                ui.separator();
+                ui.colored_label(
+                    Color32::from_rgb(230, 140, 0),
+                    format!("⚠ {}", cx.t("status.noCjkFont")),
+                );
+                if ui.small_button("✕").clicked() {
+                    dismiss_font = true;
+                }
+            }
             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                 ui.label(chrono::Local::now().format("%Y/%m/%d %H:%M:%S").to_string());
                 ui.label(format!("🔄 {}", cx.t("status.synced")));
@@ -330,6 +439,9 @@ impl Shell {
                 ui.label(format!("{icon} {}", cx.t(key)));
             });
         });
+        if dismiss_font {
+            self.font_warning = false;
+        }
     }
 
     fn floating_windows(&mut self, ctx: &egui::Context, cx: &ViewCx<'_>, out: &mut ViewerOutput) {
@@ -386,6 +498,9 @@ impl Shell {
                 cx.t("common.discardChangesMessage"),
                 cx.t("common.discardChanges"),
             ),
+            Dialog::PluginConfirm { title, message, .. } => {
+                (title.clone(), message.clone(), cx.t("common.ok"))
+            }
             Dialog::About => (
                 cx.t("menu.help.about"),
                 l10n::t_with(

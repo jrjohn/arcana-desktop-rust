@@ -69,6 +69,8 @@ pub enum Effect<T> {
     Accent(Option<usize>),
     /// Switch and persist the UI culture (C# `LocalizationService.SetCulture`).
     Culture(String),
+    /// Run a command by name through the plugin `CommandService` (contributed quick actions).
+    Command(String),
 }
 
 /// Which data set changed, so open list pages can refresh.
@@ -96,6 +98,7 @@ impl<T> Effect<T> {
             Self::Theme(t) => Effect::Theme(t),
             Self::Accent(a) => Effect::Accent(a),
             Self::Culture(c) => Effect::Culture(c),
+            Self::Command(c) => Effect::Command(c),
         }
     }
 }
@@ -121,12 +124,14 @@ mod tests {
             Effect::Theme("Dark".into()),
             Effect::Accent(Some(1)),
             Effect::Culture("zh-TW".into()),
+            Effect::Command("order.new".into()),
         ];
         let mapped: Vec<Effect<u16>> = all.into_iter().map(|e| e.map(u16::from)).collect();
         assert_eq!(mapped[0], Effect::Run(1u16));
         assert_eq!(mapped[2], Effect::CloseSelf);
         assert_eq!(mapped[6], Effect::DataChanged(DataKind::Orders));
         assert_eq!(mapped[9], Effect::Culture("zh-TW".into()));
-        assert_eq!(mapped.len(), 10);
+        assert_eq!(mapped[10], Effect::Command("order.new".into()));
+        assert_eq!(mapped.len(), 11);
     }
 }

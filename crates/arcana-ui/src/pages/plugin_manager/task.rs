@@ -94,6 +94,15 @@ async fn op(op: Op, svc: &UiServices) -> Input {
 pub async fn run(task: Task, svc: UiServices) -> Input {
     match task {
         Task::Load => Input::Loaded(rows(&svc)),
+        Task::PickPackage => {
+            // Cancel / no portal: keep whatever was typed (path entry is the fallback).
+            let picked = if crate::pages::flowchart::native_dialogs_enabled() {
+                rfd::AsyncFileDialog::new().pick_folder().await
+            } else {
+                None
+            };
+            Input::PackagePicked(picked.map(|h| h.path().display().to_string()))
+        }
         Task::Versions(id) => Input::Versions(
             svc.plugins
                 .host

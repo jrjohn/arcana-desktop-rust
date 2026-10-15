@@ -1,9 +1,23 @@
-# CI toolchain image: fmt, clippy (pedantic, -D warnings), tests, layer check, coverage.
-FROM rust:1.97-bookworm
+# CI images. Build with an explicit --target:
+#   ci  (default gate): fmt, clippy (pedantic, -D warnings), tests, layer check, coverage.
+#   gui (GUI smoke):    the real app under Xvfb (X11) and headless Weston (Wayland).
+FROM rust:1.97-bookworm AS toolchain
 RUN rustup component add rustfmt clippy llvm-tools-preview \
  && rustup target add wasm32-unknown-unknown \
  && cargo install cargo-llvm-cov --locked \
  && cargo install wasm-tools --version 1.262.0 --locked
 WORKDIR /app
+
+# Window systems + software GL live in their own stage so the normal check stays lean.
+FROM toolchain AS gui
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      xvfb weston libgl1-mesa-dri libegl1 libgles2 libegl-mesa0 libwayland-egl1 \
+      libxkbcommon0 libxkbcommon-x11-0 libxcursor1 libxrandr2 libxi6 libx11-xcb1 \
+      imagemagick fonts-noto-cjk \
+ && rm -rf /var/lib/apt/lists/*
+COPY . .
+CMD ["bash", "scripts/gui-smoke.sh"]
+
+FROM toolchain AS ci
 COPY . .
 CMD ["bash", "scripts/ci-check.sh"]

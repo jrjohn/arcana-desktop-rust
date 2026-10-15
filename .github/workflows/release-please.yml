@@ -1,0 +1,40 @@
+name: release-please
+
+# Every push to main: release-please opens/updates the release PR (version.txt + CHANGELOG,
+# release-type "simple" like the other fleet repos). Merging it tags vX.Y.Z and creates the
+# GitHub Release; the `package` job then builds the installers for that tag and uploads them.
+#
+# Packaging runs here, not in Jenkins: a release created with GITHUB_TOKEN does not trigger
+# other workflows, the multibranch job does not discover tags, and the hosted runners give a
+# clean Windows (WiX v3) / macOS (hdiutil) / Linux (AppImage) toolchain per release instead of
+# the office laptop agent. NOTE: needs "Allow GitHub Actions to create and approve pull
+# requests" (Settings > Actions > General) for the release PR.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.rp.outputs.release_created }}
+      tag_name: ${{ steps.rp.outputs.tag_name }}
+    steps:
+      - uses: googleapis/release-please-action@v5
+        id: rp
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  package:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created == 'true' }}
+    uses: ./.github/workflows/package.yml
+    with:
+      tag: ${{ needs.release-please.outputs.tag_name }}
+    permissions:
+      contents: write

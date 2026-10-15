@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Arcana
+GenericName=Enterprise Management System
+Comment=Arcana desktop (Rust + egui port of arcana-windows)
+Exec=arcana-app
+Icon=arcana
+Terminal=false
+Categories=Office;

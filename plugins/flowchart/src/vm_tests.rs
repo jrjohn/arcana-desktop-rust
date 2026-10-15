@@ -205,3 +205,132 @@ fn set_node_text_is_undoable() {
         Some("Process")
     );
 }
+
+#[test]
+fn diagram_properties_edit_with_undo() {
+    let mut vm = EditorViewModel::new();
+    vm.on(Input::SetDiagramName("Flow A".into()));
+    vm.on(Input::SetDiagramDescription("desc".into()));
+    assert_eq!(vm.state.diagram.name, "Flow A");
+    assert_eq!(vm.state.diagram.description, "desc");
+    assert!(vm.on(Input::SetDiagramName("Flow A".into())).is_empty());
+    vm.on(Input::Undo);
+    assert_eq!(vm.state.diagram.description, "");
+    vm.on(Input::SetShowGrid(false));
+    vm.on(Input::SetSnapToGrid(true));
+    vm.on(Input::SetGridSize(1000.0));
+    assert!(!vm.state.diagram.show_grid);
+    assert!(vm.state.diagram.snap_to_grid);
+    assert_eq!(vm.state.diagram.grid_size, GRID_MAX);
+}
+
+#[test]
+fn bounds_and_resize_respect_minimums_and_undo() {
+    let (mut vm, a, _) = vm_with_two();
+    vm.on(Input::SetNodeBounds {
+        id: a.clone(),
+        x: 5.0,
+        y: 6.0,
+        width: 1.0,
+        height: 200.0,
+    });
+    let n = vm.state.diagram.node(&a).unwrap();
+    assert_eq!(
+        (n.x, n.y, n.width, n.height),
+        (5.0, 6.0, MIN_NODE_WIDTH, 200.0)
+    );
+    vm.on(Input::Undo);
+    assert_eq!(vm.state.diagram.node(&a).unwrap().x, 100.0);
+    vm.on(Input::BeginMove);
+    for (x, w) in [(90.0, 200.0), (80.0, 220.0)] {
+        vm.on(Input::ResizeNode {
+            id: a.clone(),
+            x,
+            y: x,
+            width: w,
+            height: 100.0,
+        });
+    }
+    assert_eq!(vm.state.diagram.node(&a).unwrap().width, 220.0);
+    vm.on(Input::Undo);
+    assert_eq!(
+        vm.state.diagram.node(&a).unwrap().x,
+        100.0,
+        "one undo per gesture"
+    );
+}
+
+#[test]
+fn waypoints_insert_move_remove() {
+    let (mut vm, a, b) = vm_with_two();
+    vm.on(Input::AddConnection {
+        source: a,
+        target: b,
+        source_point: ConnectionPoint::Right,
+        target_point: ConnectionPoint::Left,
+    });
+    let e = vm.state.diagram.edges[0].id.clone();
+    vm.on(Input::InsertWaypoint {
+        edge: e.clone(),
+        index: 0,
+        x: 300.0,
+        y: 50.0,
+    });
+    vm.on(Input::MoveWaypoint {
+        edge: e.clone(),
+        index: 0,
+        x: 320.0,
+        y: 60.0,
+    });
+    assert!(
+        vm.state.diagram.edges[0]
+            .waypoints
+            .contains(&Point::new(320.0, 60.0))
+    );
+    let count = vm.state.diagram.edges[0].waypoints.len();
+    assert!(
+        vm.on(Input::MoveWaypoint {
+            edge: e.clone(),
+            index: 99,
+            x: 0.0,
+            y: 0.0
+        })
+        .is_empty()
+    );
+    vm.on(Input::RemoveWaypoint {
+        edge: e.clone(),
+        index: 0,
+    });
+    assert_eq!(vm.state.diagram.edges[0].waypoints.len(), count - 1);
+    vm.on(Input::Undo);
+    assert_eq!(vm.state.diagram.edges[0].waypoints.len(), count);
+    assert!(
+        vm.on(Input::RemoveWaypoint { edge: e, index: 99 })
+            .is_empty()
+    );
+}
+
+#[test]
+fn insert_waypoint_materializes_routed_bends() {
+    let mut vm = EditorViewModel::with_diagram(Diagram::create_sample());
+    let (id, before) = vm
+        .state
+        .diagram
+        .edges
+        .iter()
+        .find_map(|e| {
+            let p = crate::geometry::edge_path(&vm.state.diagram, e)?;
+            (p.len() > 2).then(|| (e.id.clone(), p.len() - 2))
+        })
+        .expect("sample has a routed edge");
+    vm.on(Input::InsertWaypoint {
+        edge: id.clone(),
+        index: 0,
+        x: 1.0,
+        y: 1.0,
+    });
+    assert_eq!(
+        vm.state.diagram.edge(&id).unwrap().waypoints.len(),
+        before + 1
+    );
+}
