@@ -300,6 +300,10 @@ name = "arcana-plugin-api"
 version = "0.1.0"
 dependencies = [
  "arcana-core",
+ "chrono",
+ "semver",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -315,6 +319,15 @@ version = "0.1.0"
 dependencies = [
  "arcana-core",
  "arcana-plugin-api",
+ "async-trait",
+ "chrono",
+ "inventory",
+ "semver",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -904,7 +917,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "117725a109d387c937a1533ce01b450cbde6b88abceea8473c4d7a85853cda3c"
 dependencies = [
  "lazy_static",
- "windows-sys 0.48.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -2185,6 +2198,15 @@ checksum = "cc4e190f5d26ca7051642629da2c52fc03bde85a03197c99408dcd291734c855"
 dependencies = [
  "equivalent",
  "hashbrown 0.17.1",
+]
+
+[[package]]
+name = "inventory"
+version = "0.3.25"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6928282826c822ad91bf1c9a1cb90a30ba1c26770749929b4656cd6be829cd7c"
+dependencies = [
+ "rustversion",
 ]
 
 [[package]]

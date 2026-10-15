@@ -44,6 +44,8 @@ tracing-appender = "0.2"
 dirs = "5"
 tempfile = "3"
 proptest = "1"
+inventory = "0.3"
+semver = { version = "1", features = ["serde"] }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
