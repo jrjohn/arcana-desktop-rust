@@ -98,7 +98,7 @@
                     <Component Id='License' Guid='*'>
                         <File Id='LicenseFile'
                             DiskId='1'
-                            Source='wix\License.rtf'
+                            Source='crates\arcana-app\wix\License.rtf'
                             KeyPath='yes'/>
                     </Component>
                     
@@ -119,14 +119,6 @@
                                 Name='arcana-app.exe'
                                 DiskId='1'
                                 Source='$(var.CargoTargetBinDir)\arcana-app.exe'
-                                KeyPath='yes'/>
-                        </Component>
-                        <Component Id='binary1' Guid='*'>
-                            <File
-                                Id='exe1'
-                                Name='screenshots.exe'
-                                DiskId='1'
-                                Source='$(var.CargoTargetBinDir)\screenshots.exe'
                                 KeyPath='yes'/>
                         </Component>
                     </Directory>
@@ -150,7 +142,6 @@
             <ComponentRef Id='License'/>
             
             <ComponentRef Id='binary0'/>
-            <ComponentRef Id='binary1'/>
 
             <Feature
                 Id='Environment'
@@ -194,7 +185,7 @@
           Disabling the EULA dialog in the installer requires commenting out
           or removing the following `WixVariable` tag
         -->
-        <WixVariable Id='WixUILicenseRtf' Value='wix\License.rtf'/>
+        <WixVariable Id='WixUILicenseRtf' Value='crates\arcana-app\wix\License.rtf'/>
         
         
         <!--
