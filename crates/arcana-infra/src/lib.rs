@@ -13,6 +13,7 @@ pub mod locale;
 pub mod localization;
 pub mod logging;
 pub mod network;
+pub mod plugin_runtime;
 pub mod plugin_store;
 pub mod plugins;
 pub mod security;

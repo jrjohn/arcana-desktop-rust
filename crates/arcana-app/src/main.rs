@@ -26,7 +26,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .build()?;
     let services = runtime.block_on(bootstrap::bootstrap(&paths))?;
     let network = bootstrap::network_monitor();
-    let ui_services = UiServices::from_arcana(&services, network as Arc<_>);
+    let ui_services = UiServices::from_arcana(&services, network as Arc<_>, &paths.data_dir);
     let shell = Shell::new(ui_services, runtime.handle().clone());
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()

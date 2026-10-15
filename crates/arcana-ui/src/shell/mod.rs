@@ -6,6 +6,7 @@
 //! without egui rendering; drawing lives in [`chrome`] and [`tabs`].
 
 mod chrome;
+pub mod plugins;
 mod tabs;
 #[cfg(test)]
 mod tests;
@@ -104,8 +105,9 @@ impl Shell {
     pub fn new(svc: UiServices, runtime: Handle) -> Self {
         crate::l10n::register(svc.localization.as_ref());
         let culture = svc.app_settings.language_code();
-        if !culture.is_empty() {
+        if !culture.is_empty() && culture != svc.localization.current_culture() {
             svc.localization.set_culture(&culture);
+            plugins::relocalize(&svc.plugins);
         }
         let theme_id = svc.app_settings.theme_id();
         let accent = svc
@@ -411,6 +413,7 @@ impl Shell {
                 Effect::Culture(c) => {
                     self.svc.localization.set_culture(&c);
                     self.svc.app_settings.set_language_code(&c);
+                    plugins::relocalize(&self.svc.plugins);
                 }
             }
         }

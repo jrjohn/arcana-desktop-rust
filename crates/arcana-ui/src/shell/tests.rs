@@ -36,7 +36,11 @@ fn fixture() -> Fixture {
         arcana_infra::seed::seed_demo_data(&s).await.unwrap();
         s
     });
-    let ui = UiServices::from_arcana(&svc, Arc::new(ProbeNetworkMonitor::new(StaticProbe(true))));
+    let ui = UiServices::from_arcana(
+        &svc,
+        Arc::new(ProbeNetworkMonitor::new(StaticProbe(true))),
+        dir.path(),
+    );
     ui.app_settings.set_language_code("en-US");
     let mut shell = Shell::new(ui, rt.handle().clone());
     shell.settle(WAIT);

@@ -29,10 +29,19 @@ fn allowed() -> BTreeMap<&'static str, &'static [&'static str]> {
                 "arcana-plugin-host",
             ][..],
         ),
-        // ui: view models work on domain entities and validators (M4).
+        // ui: view models work on domain entities and validators (M4). M5: the shell draws
+        // plugin contributions (menus, views, the plugin manager) from the plugin host and hosts
+        // the FlowChart editor as a document tab.
         (
             "arcana-ui",
-            &["arcana-core", "arcana-domain", "arcana-infra"][..],
+            &[
+                "arcana-core",
+                "arcana-domain",
+                "arcana-infra",
+                "arcana-plugin-api",
+                "arcana-plugin-host",
+                "arcana-plugin-flowchart",
+            ][..],
         ),
         // app: the composition root wires infra services and the database before handing
         // them to the shell (M4).

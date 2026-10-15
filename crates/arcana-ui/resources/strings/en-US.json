@@ -68,5 +68,10 @@
   "ui.plugins.status": "Status:",
   "ui.plugins.errorCount": "Error Count:",
   "ui.plugins.versions": "Version Management",
-  "ui.plugins.runtimeNote": "Requires the plugin runtime (milestone 5); built-in plugins are compiled in and always active."
+  "ui.plugins.runtimeNote": "Requires the plugin runtime (milestone 5); built-in plugins are compiled in and always active.",
+  "ui.plugins.approve": "Approve Permissions",
+  "ui.plugins.packagePath": "Plugin package directory...",
+  "ui.plugins.pendingPermissions": "Pending permissions: {0}",
+  "ui.plugins.permissions": "Permissions:",
+  "ui.plugins.settings": "Settings"
 }

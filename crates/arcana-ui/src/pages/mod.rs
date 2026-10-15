@@ -4,6 +4,7 @@
 pub mod customer;
 pub mod entity_form;
 pub mod entity_list;
+pub mod flowchart;
 pub mod home;
 pub mod order_detail;
 pub mod order_list;
@@ -33,6 +34,7 @@ pub enum Page {
     CustomerDetail(entity_form::ViewModel<CustomerForm>),
     Settings(settings::ViewModel),
     PluginManager(plugin_manager::ViewModel),
+    FlowChart(Box<flowchart::ViewModel>),
 }
 
 /// An input addressed to a page.
@@ -47,6 +49,7 @@ pub enum PageMsg {
     CustomerDetail(entity_form::Input<Customer>),
     Settings(settings::Input),
     PluginManager(plugin_manager::Input),
+    FlowChart(flowchart::Input),
 }
 
 /// An async task requested by a page.
@@ -60,6 +63,8 @@ pub enum PageTask {
     CustomerList(entity_list::Task),
     CustomerDetail(entity_form::Task<Customer>),
     Settings(settings::Task),
+    PluginManager(plugin_manager::Task),
+    FlowChart(flowchart::Task),
 }
 
 fn lift<T>(fx: Vec<Effect<T>>, f: impl Fn(T) -> PageTask) -> Vec<Effect<PageTask>> {
@@ -103,10 +108,14 @@ impl Page {
                 Self::Settings(settings::ViewModel::new(settings.clone())),
                 vec![],
             ),
-            Route::PluginManager => (
-                Self::PluginManager(plugin_manager::ViewModel::default()),
-                vec![],
-            ),
+            Route::PluginManager => {
+                let (vm, fx) = plugin_manager::ViewModel::new();
+                (Self::PluginManager(vm), lift(fx, PageTask::PluginManager))
+            }
+            Route::FlowChart { mode } => {
+                let (vm, fx) = flowchart::ViewModel::new(mode);
+                (Self::FlowChart(Box::new(vm)), lift(fx, PageTask::FlowChart))
+            }
         }
     }
 
@@ -126,6 +135,9 @@ impl Page {
             Self::CustomerDetail(vm) => Route::CustomerDetail { id: vm.state.id },
             Self::Settings(_) => Route::Settings,
             Self::PluginManager(_) => Route::PluginManager,
+            Self::FlowChart(_) => Route::FlowChart {
+                mode: crate::nav::FlowMode::New,
+            },
         }
     }
 
@@ -151,8 +163,9 @@ impl Page {
             }
             (Self::Settings(vm), PageMsg::Settings(i)) => lift(vm.on(i), PageTask::Settings),
             (Self::PluginManager(vm), PageMsg::PluginManager(i)) => {
-                lift(vm.on(i), |never| match never {})
+                lift(vm.on(i), PageTask::PluginManager)
             }
+            (Self::FlowChart(vm), PageMsg::FlowChart(i)) => lift(vm.on(i), PageTask::FlowChart),
             _ => vec![],
         }
     }
@@ -181,6 +194,10 @@ impl Page {
             }
             Self::Settings(_) => cx.t("nav.settings"),
             Self::PluginManager(_) => cx.t("nav.plugins"),
+            Self::FlowChart(vm) => {
+                let title = vm.editor.state.diagram.name.clone();
+                format!("{} — {title}", cx.t("flowchart.editor"))
+            }
         }
     }
 
@@ -191,6 +208,7 @@ impl Page {
             Self::OrderDetail(vm) => vm.state.is_dirty,
             Self::ProductDetail(vm) => vm.state.is_dirty,
             Self::CustomerDetail(vm) => vm.state.is_dirty,
+            Self::FlowChart(vm) => vm.editor.state.modified,
             _ => false,
         }
     }
@@ -276,7 +294,7 @@ impl Page {
     }
 
     /// Draw the page; returns the inputs the user produced.
-    pub fn show(&self, ui: &mut egui::Ui, cx: &ViewCx<'_>) -> Vec<PageMsg> {
+    pub fn show(&mut self, ui: &mut egui::Ui, cx: &ViewCx<'_>) -> Vec<PageMsg> {
         fn wrap<I>(v: Vec<I>, f: fn(I) -> PageMsg) -> Vec<PageMsg> {
             v.into_iter().map(f).collect()
         }
@@ -307,6 +325,7 @@ impl Page {
                 plugin_manager::show(ui, &vm.state, cx),
                 PageMsg::PluginManager,
             ),
+            Self::FlowChart(vm) => wrap(flowchart::show(ui, vm, cx), PageMsg::FlowChart),
         }
     }
 }
@@ -322,5 +341,7 @@ pub async fn run_task(task: PageTask, svc: UiServices) -> PageMsg {
         PageTask::CustomerList(t) => PageMsg::CustomerList(customer::run_list(t, svc).await),
         PageTask::CustomerDetail(t) => PageMsg::CustomerDetail(customer::run_form(t, svc).await),
         PageTask::Settings(t) => PageMsg::Settings(settings::run(t, svc).await),
+        PageTask::PluginManager(t) => PageMsg::PluginManager(plugin_manager::run(t, svc).await),
+        PageTask::FlowChart(t) => PageMsg::FlowChart(flowchart::run(t, svc).await),
     }
 }

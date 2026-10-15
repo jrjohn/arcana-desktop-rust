@@ -66,7 +66,7 @@ pub struct Viewer<'a> {
 }
 
 /// Draw one tab's content (also used by floating windows).
-pub fn tab_ui(ui: &mut Ui, tab: &Tab, cx: &ViewCx<'_>, out: &mut ViewerOutput) {
+pub fn tab_ui(ui: &mut Ui, tab: &mut Tab, cx: &ViewCx<'_>, out: &mut ViewerOutput) {
     if tab.can_go_back() && ui.button(format!("← {}", cx.t("ui.nav.back"))).clicked() {
         out.back.push(tab.id);
     }
@@ -93,7 +93,7 @@ impl TabViewer for Viewer<'_> {
     }
 
     fn ui(&mut self, ui: &mut Ui, tab: &mut TabId) {
-        if let Some(t) = self.tabs.get(tab) {
+        if let Some(t) = self.tabs.get_mut(tab) {
             egui::Frame::new().inner_margin(16).show(ui, |ui| {
                 tab_ui(ui, t, &self.cx, &mut self.out);
             });

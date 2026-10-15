@@ -68,5 +68,10 @@
   "ui.plugins.status": "狀態：",
   "ui.plugins.errorCount": "錯誤次數：",
   "ui.plugins.versions": "版本管理",
-  "ui.plugins.runtimeNote": "需要外掛執行環境（里程碑 5）；內建外掛已編入程式且永遠啟用。"
+  "ui.plugins.runtimeNote": "需要外掛執行環境（里程碑 5）；內建外掛已編入程式且永遠啟用。",
+  "ui.plugins.approve": "核准權限",
+  "ui.plugins.packagePath": "外掛套件目錄...",
+  "ui.plugins.pendingPermissions": "待核准權限:{0}",
+  "ui.plugins.permissions": "權限:",
+  "ui.plugins.settings": "設定"
 }
