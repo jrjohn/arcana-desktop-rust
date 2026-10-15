@@ -46,6 +46,9 @@ tempfile = "3"
 proptest = "1"
 inventory = "0.3"
 semver = { version = "1", features = ["serde"] }
+quick-xml = "0.39"
+flate2 = "1"
+percent-encoding = "2"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

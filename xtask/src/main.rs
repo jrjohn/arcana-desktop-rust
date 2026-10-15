@@ -37,7 +37,10 @@ fn allowed() -> BTreeMap<&'static str, &'static [&'static str]> {
         // app: the composition root wires infra services and the database before handing
         // them to the shell (M4).
         ("arcana-app", &["arcana-ui", "arcana-infra"][..]),
-        ("arcana-plugin-flowchart", &["arcana-plugin-api"][..]),
+        (
+            "arcana-plugin-flowchart",
+            &["arcana-core", "arcana-plugin-api"][..],
+        ),
         ("xtask", &[][..]),
     ])
 }
