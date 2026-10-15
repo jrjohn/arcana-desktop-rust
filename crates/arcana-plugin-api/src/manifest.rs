@@ -19,8 +19,8 @@ fn default_view_type() -> String {
     "Page".to_string()
 }
 
-/// C# `PluginManifest`.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+/// C# `PluginManifest`. `Default` keeps the C# initializer `Type = "Module"`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PluginManifest {
     pub id: String,
@@ -52,6 +52,49 @@ pub struct PluginManifest {
     /// Rust addition: WIT world ABI version a WASM plugin was built against.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub abi_version: Option<u32>,
+}
+
+impl Default for PluginManifest {
+    fn default() -> Self {
+        Self {
+            id: String::new(),
+            name: String::new(),
+            version: String::new(),
+            description: None,
+            author: None,
+            main: None,
+            plugin_class: None,
+            plugin_type: default_type(),
+            dependencies: None,
+            activation_events: None,
+            contributes: None,
+            l10n: None,
+            icon: None,
+            permissions: Vec::new(),
+            abi_version: None,
+        }
+    }
+}
+
+impl Default for ManifestViewDefinition {
+    fn default() -> Self {
+        Self {
+            id: String::new(),
+            title_key: String::new(),
+            title: None,
+            icon: None,
+            view_type: default_view_type(),
+            view_class: None,
+            view_model_class: None,
+            category: None,
+            category_key: None,
+            order: 0,
+            can_have_multiple_instances: false,
+            module_id: None,
+            is_module_default_tab: false,
+            module_tab_order: 0,
+        }
+    }
 }
 
 impl PluginManifest {
@@ -115,8 +158,8 @@ pub struct ManifestContributions {
     pub configuration: Option<ManifestConfigurationDefinition>,
 }
 
-/// C# `ManifestViewDefinition`.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+/// C# `ManifestViewDefinition`. `Default` keeps the C# initializer `Type = "Page"`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ManifestViewDefinition {
     pub id: String,

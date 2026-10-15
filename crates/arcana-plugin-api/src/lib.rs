@@ -12,6 +12,7 @@ pub mod context;
 pub mod health;
 pub mod manager;
 pub mod manifest;
+pub mod mvvm;
 pub mod permission;
 pub mod plugin;
 pub mod schema;

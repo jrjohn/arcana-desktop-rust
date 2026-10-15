@@ -112,6 +112,30 @@ pub trait ApplicationEvent: Any + Send + Sync {
     fn source_plugin_id(&self) -> Option<&str>;
 }
 
+/// C# `abstract record ApplicationEventBase`: embed it and delegate [`ApplicationEvent`] to it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ApplicationEventBase {
+    pub timestamp: DateTime<Utc>,
+    pub source_plugin_id: Option<String>,
+}
+
+impl ApplicationEventBase {
+    /// Timestamped now (C# `Timestamp { get; } = DateTime.UtcNow`).
+    #[must_use]
+    pub fn new(source_plugin_id: Option<&str>) -> Self {
+        Self {
+            timestamp: Utc::now(),
+            source_plugin_id: source_plugin_id.map(str::to_string),
+        }
+    }
+}
+
+impl Default for ApplicationEventBase {
+    fn default() -> Self {
+        Self::new(None)
+    }
+}
+
 /// C# `IEventAggregator`.
 pub trait EventAggregator: Send + Sync {
     fn publish_any(&self, type_id: TypeId, event: &(dyn Any + Send + Sync));

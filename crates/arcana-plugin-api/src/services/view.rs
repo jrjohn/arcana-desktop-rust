@@ -3,6 +3,8 @@
 use std::any::Any;
 use std::sync::Arc;
 
+use arcana_core::AppResult;
+
 use crate::services::Subscription;
 
 /// C# `ViewType`.
@@ -67,7 +69,9 @@ pub type ViewFactory = Arc<dyn Fn() -> ViewInstance + Send + Sync>;
 
 /// C# `IViewRegistry`. `ViewsChanged` → [`ViewRegistry::revision`].
 pub trait ViewRegistry: Send + Sync {
-    fn register_view(&self, view: ViewDefinition) -> Subscription;
+    /// # Errors
+    /// Validation failure or duplicate id.
+    fn register_view(&self, view: ViewDefinition) -> AppResult<Subscription>;
     fn register_view_factory(&self, view_id: &str, factory: ViewFactory) -> Subscription;
     fn view(&self, view_id: &str) -> Option<ViewDefinition>;
     fn all_views(&self) -> Vec<ViewDefinition>;
