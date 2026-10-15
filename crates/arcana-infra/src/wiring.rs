@@ -32,7 +32,15 @@ pub fn default_database_url() -> AppResult<String> {
     let dir = app_data_dir().join("data");
     std::fs::create_dir_all(&dir)
         .map_err(|e| AppError::data(ErrorCode::FileAccessDenied, e.to_string()))?;
-    Ok(format!("sqlite://{}", dir.join("arcana.db").display()))
+    Ok(sqlite_url(&dir.join("arcana.db")))
+}
+
+/// sqlx `SQLite` URL for a database file. Windows path separators become `/` so the URL has one
+/// shape on every OS (`sqlite://C:/Users/.../arcana.db`); a raw `\` path only worked because
+/// sqlx happens to pass the remainder through as a file name.
+#[must_use]
+pub fn sqlite_url(file: &std::path::Path) -> String {
+    format!("sqlite://{}", file.display().to_string().replace('\\', "/"))
 }
 
 /// Inputs for [`ArcanaServices::new`].

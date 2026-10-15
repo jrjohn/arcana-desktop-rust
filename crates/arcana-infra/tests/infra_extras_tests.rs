@@ -401,3 +401,18 @@ async fn blank_stored_hash_surfaces_as_validation_error() {
         ErrorCode::ValidationFailed
     );
 }
+
+// Windows CI (PR-7 #8) built the URL with backslashes: `sqlite:///d\data\arcana.db`.
+#[test]
+fn sqlite_url_uses_forward_slashes_on_every_os() {
+    use arcana_infra::wiring::sqlite_url;
+    use std::path::Path;
+    assert_eq!(
+        sqlite_url(Path::new(r"C:\Users\a\Arcana\data\arcana.db")),
+        "sqlite://C:/Users/a/Arcana/data/arcana.db"
+    );
+    assert_eq!(
+        sqlite_url(Path::new("/d/data/arcana.db")),
+        "sqlite:///d/data/arcana.db"
+    );
+}
