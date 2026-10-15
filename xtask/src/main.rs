@@ -16,8 +16,11 @@ fn allowed() -> BTreeMap<&'static str, &'static [&'static str]> {
         ("arcana-plugin-api", &["arcana-core"][..]),
         (
             "arcana-plugin-host",
-            &["arcana-core", "arcana-plugin-api"][..],
+            &["arcana-core", "arcana-plugin-api", "arcana-plugin-wasm"][..],
         ),
+        // wasm: the third-party sandbox sees only core; the host maps manifest permissions
+        // onto its `Grants` (M5).
+        ("arcana-plugin-wasm", &["arcana-core"][..]),
         (
             "arcana-infra",
             &[

@@ -1,0 +1,40 @@
+// ABI contract between the Arcana host and third-party WASM plugins.
+// Bump ABI_VERSION in src/lib.rs together with any breaking change here.
+package arcana:plugin@1.0.0;
+
+/// Diagnostics. Granted only with the `log` permission.
+interface host-log {
+    log: func(msg: string);
+}
+
+/// Read-only file access below one host-chosen root. Granted only with `fs_read`.
+interface host-fs {
+    read-file: func(path: string) -> result<string, string>;
+}
+
+/// Outbound HTTP. Granted only with `net`.
+interface host-net {
+    http-get: func(url: string) -> result<string, string>;
+}
+
+/// Plugin key/value state kept by the host. Writes commit only when the call succeeds.
+interface host-state {
+    get: func(key: string) -> option<string>;
+    set: func(key: string, value: string);
+}
+
+world plugin {
+    import host-log;
+    import host-fs;
+    import host-net;
+    import host-state;
+
+    export abi-version: func() -> u32;
+    /// JSON object: { "id": .., "name": .., "version": .. }.
+    export metadata: func() -> string;
+    export activate: func() -> result<_, string>;
+    export deactivate: func() -> result<_, string>;
+    /// Declarative UI tree as JSON (see `UiNode`).
+    export render: func() -> string;
+    export run-command: func(name: string, arg: string) -> result<string, string>;
+}

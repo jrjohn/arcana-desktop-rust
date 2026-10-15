@@ -6,5 +6,7 @@ cargo xtask layers
 # JSON for SonarQube, then the blocking human-readable run.
 cargo clippy --workspace --all-targets --message-format=json -- -D warnings > clippy-report.json || true
 cargo clippy --workspace --all-targets -- -D warnings
+# The sandbox tests load the example plugin component.
+bash scripts/build-wasm-example.sh
 cargo llvm-cov --workspace --lcov --output-path lcov.info
 echo "ci-check: OK"
