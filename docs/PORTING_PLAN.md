@@ -103,3 +103,11 @@ Marketplace、When-expression、同步伺服器、DB 加密、登入頁。
 - **GUI 冒煙測試**:`ARCANA_SMOKE_SCREENSHOT=<ppm>` 讓真 app 畫 30 幀後用 `ViewportCommand::Screenshot` 取 framebuffer,少於 16 色視為空白(exit 2),存檔後自行關閉。`scripts/gui-smoke.sh` 在 `Dockerfile.ci --target gui`(Xvfb、weston、mesa 軟體 GL、Noto CJK)內各跑一次 X11 與 Wayland(weston headless + pixman)。
 - **CI**:Jenkinsfile 改為 `parallel` 三平台,任一紅即整體紅;`lock('ci-rust-build')` 只包 Linux(bluesea Docker),Sonar 留在 Linux。Windows(label `windows`)跑 `scripts/ci-windows.ps1`、macOS(label `macos`)跑 `scripts/ci-native.sh`:缺 cargo 時以 rustup 裝到建置使用者家目錄(可逆:`rustup self uninstall`),再 `cargo test --workspace` + release build。
 - **打包**:release-please(`simple`,同 fleet)切版後,同一個 workflow 呼叫 `.github/workflows/package.yml` 在 GitHub hosted runner 產出 .msi(cargo-wix)、.dmg(.app,ad-hoc 簽章)、.deb(cargo-deb)、AppImage(linuxdeploy)並上傳 Release。選 GitHub Actions 不選 Jenkins `buildingTag()`:GITHUB_TOKEN 建的 release 不會觸發其他 workflow、multibranch job 沒有探索 tag、Windows agent 是辦公室筆電(Wi-Fi 掉線紀錄),hosted runner 每次都是乾淨的 WiX/hdiutil/FUSE 環境。PR 改到打包檔案時只建不傳。
+- **原生檔案對話框**:FlowChart 開檔 / 另存與 PluginManager「📂」選外掛套件資料夾都用 `rfd::AsyncFileDialog`(在 tokio task 上,不卡 UI;Linux 只開 `xdg-portal`,不需 GTK)。rfd 300ms 內回 None 視為沒有 portal → FlowChart 退回路徑輸入;PluginManager 的路徑文字框一直都在。`ARCANA_NATIVE_DIALOGS=0` 強制不用原生對話框。zip 套件仍未支援(只收目錄)。
+- **FlowChart**:左側 Shapes 面板(縮圖 + 名稱,點擊新增或拖到畫布放開處);未選取時屬性面板顯示 Diagram Name / Description / Show Grid / Snap to Grid / Grid Size,選節點可改文字與 X/Y/W/H;選取節點 8 個縮放控點、選取連線的轉折點可拖曳 / 拖中點插入 / 雙擊刪除(每個手勢一筆 undo);工具列 egui-phosphor 圖示 + 文字;凹形以耳切法三角化填色(取代扇形近似);DashDot 為長劃 + 點。截圖 `docs/screen-rust/flowchart.png` 版面已與 C# 一致。
+
+### 與 C# 仍有的差異
+- FlowChart:C# 工具列有「100%」縮放下拉、Grid Size 是數字框(這裡 DragValue)、連線屬性可編輯(這裡只顯示)、屬性面板較窄。
+- 外掛套件只收目錄,不收 C# 的 zip。
+- 側欄靜態項目仍寫在 shell(同 C# XAML),只有 FunctionTree 部分是動態。
+- 安裝包未簽章(macOS 只有 ad-hoc;Developer ID + notarization、Windows Authenticode 為後續)。

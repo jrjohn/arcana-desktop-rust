@@ -3,3 +3,5 @@
 .scannerwork/
 clippy-report.json
 lcov.info
+dist/
+smoke-out/

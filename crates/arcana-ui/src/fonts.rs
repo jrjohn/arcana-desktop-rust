@@ -152,6 +152,7 @@ pub enum FontStatus {
 #[must_use]
 pub fn with_fallback(bytes: Vec<u8>) -> FontDefinitions {
     let mut fonts = FontDefinitions::default();
+    arcana_plugin_flowchart::ui::add_icon_font(&mut fonts);
     add_fallback(&mut fonts, bytes);
     fonts
 }
@@ -202,6 +203,8 @@ pub fn install_into(
 /// icon font) into `ctx`.
 pub fn install_with(ctx: &egui::Context, extra: impl FnOnce(&mut FontDefinitions)) -> FontStatus {
     let mut fonts = FontDefinitions::default();
+    // FlowChart toolbar icons (egui-phosphor), whether or not a CJK font exists.
+    arcana_plugin_flowchart::ui::add_icon_font(&mut fonts);
     extra(&mut fonts);
     let status = install_into(&mut fonts, Os::current(), &windows_dir(), |p| {
         std::fs::read(p).ok()

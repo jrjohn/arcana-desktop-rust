@@ -75,5 +75,6 @@
   "ui.plugins.permissions": "Permissions:",
   "ui.plugins.settings": "Settings",
   "status.noCjkFont": "No CJK font found: Chinese/Japanese text may show as boxes",
-  "ui.module": "Module"
+  "ui.module": "Module",
+  "ui.plugins.browse": "Browse for a plugin package folder"
 }

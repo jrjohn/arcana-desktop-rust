@@ -14,6 +14,7 @@ arcana-plugin-host.workspace = true
 arcana-plugin-flowchart = { path = "../../plugins/flowchart" }
 egui.workspace = true
 egui_dock.workspace = true
+rfd.workspace = true
 tokio = { workspace = true, features = ["rt", "sync"] }
 rust_decimal.workspace = true
 chrono.workspace = true

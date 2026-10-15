@@ -115,11 +115,18 @@ fn list(ui: &mut Ui, s: &State, cx: &ViewCx<'_>, out: &mut Vec<Input>) {
             .add(
                 egui::TextEdit::singleline(&mut path)
                     .hint_text(cx.t("ui.plugins.packagePath"))
-                    .desired_width(ui.available_width() - 120.0),
+                    .desired_width(ui.available_width() - 160.0),
             )
             .changed()
         {
             out.push(Input::PackagePathChanged(path));
+        }
+        if ui
+            .button("📂")
+            .on_hover_text(cx.t("ui.plugins.browse"))
+            .clicked()
+        {
+            out.push(Input::BrowsePackage);
         }
         action_button(ui, s, cx, RuntimeAction::Install, out);
     });
