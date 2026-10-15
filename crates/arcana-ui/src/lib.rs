@@ -1,18 +1,23 @@
-//! egui views and view models (C# `Arcana.App` views). Milestone 4.
+//! egui shell, views and view models (C# `Arcana.App`).
+//!
+//! MVVM-UDF: each page has a view model with `on(Input) -> Vec<Effect>` that never touches
+//! egui or I/O ([`pages`]); its view only reads state and returns inputs; async work runs on
+//! a tokio runtime and comes back as inputs ([`runtime`]). The [`shell::Shell`] hosts pages
+//! in dockable tabs and routes everything through the [`commands`] registry and the
+//! [`nav::NavGraph`].
 
-/// Root shell. Milestone 4 replaces this with the dock, navigation and pages.
-#[derive(Debug, Default)]
-pub struct Shell;
+pub mod commands;
+pub mod effect;
+pub mod fmt;
+pub mod fonts;
+pub mod l10n;
+pub mod nav;
+pub mod pages;
+pub mod runtime;
+pub mod services;
+pub mod shell;
+pub mod theme;
+pub mod widgets;
 
-impl Shell {
-    /// Window title shown by the desktop entry point.
-    pub const TITLE: &'static str = "Arcana";
-
-    /// Draws the shell into the central panel.
-    pub fn show(&mut self, ui: &mut egui::Ui) {
-        egui::CentralPanel::default().show(ui, |ui| {
-            ui.heading(Self::TITLE);
-            ui.label("arcana-desktop-rust — milestone 1 skeleton");
-        });
-    }
-}
+pub use services::UiServices;
+pub use shell::{Shell, TabId};

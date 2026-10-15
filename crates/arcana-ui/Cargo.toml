@@ -1,14 +1,27 @@
 [package]
 name = "arcana-ui"
-description = "egui views and view models (C# Arcana.App views)"
+description = "egui shell, views and view models (C# Arcana.App views)"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 
 [dependencies]
 arcana-core.workspace = true
+arcana-domain.workspace = true
 arcana-infra.workspace = true
 egui.workspace = true
+egui_dock.workspace = true
+tokio = { workspace = true, features = ["rt", "sync"] }
+rust_decimal.workspace = true
+chrono.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+egui_kittest.workspace = true
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time"] }
+rust_decimal_macros.workspace = true
+tempfile.workspace = true
 
 [lints]
 workspace = true

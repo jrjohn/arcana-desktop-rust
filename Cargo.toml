@@ -30,6 +30,8 @@ rust_decimal = { version = "1", default-features = false, features = ["std"] }
 rust_decimal_macros = "1"
 sqlx = { version = "0.8", default-features = false, features = ["sqlite", "runtime-tokio", "migrate", "macros"] }
 tokio = { version = "1", features = ["sync"] }
+egui_dock = "0.21"
+egui_kittest = "0.36"
 pbkdf2 = { version = "0.12", default-features = false, features = ["hmac"] }
 hmac = "0.12"
 sha2 = "0.10"

@@ -60,3 +60,15 @@ Marketplace、When-expression、同步伺服器、DB 加密、登入頁。
 - **刻意偏離 C#**:PasswordHasher 空字串回 `AppError::Validation` 而非拋例外(core trait 改回傳 `AppResult`);TokenService 金鑰一律注入(拿掉 C# 以機器名+使用者名推導的可猜金鑰);`VectorClock` 的 hash 忽略 0 值項目以符合「因果相等」;`IComparable` 對 Concurrent 回 0 → Rust `PartialOrd` 回 `None`;`MvRegister::single_value` 回 `AppResult`;C# 沒實作的 key/value `SettingsService` 補 `JsonSettingsService`。
 - **保留的 C# 怪行為**:沒有截止時間的鎖定在下次登入時視同過期而自動解鎖;`AuthService` 算權限時不排除過期的角色指派(`AuthorizationService` 會排除);`KeepBoth` 與沒註冊 resolver 的 `Custom` 都退回 LWW。
 - **延後**:外掛相關(`AddPluginServices`)→ M5;`NetworkMonitorImpl`(.NET `NetworkInterface`,無可攜 std 對應)→ M4 與 UI 外殼一起決定;`LocalizationService` 契約暫放 `arcana-infra`,M5 移到 `arcana-plugin-api`。
+
+## 7. 里程碑 4 紀錄(egui UI)
+- **結構**:`arcana-ui` = `pages/*`(每頁 `ViewModel { state, on(Input) -> Vec<Effect> }` + `view.rs` + `task.rs`)、`shell/*`(選單、側欄、`egui_dock` 分頁、浮動視窗、狀態列、對話框、toast)、`commands`(單一 Command registry:選單 / 快捷鍵 / 工具列 / 命令搜尋都走 `Shell::execute`)、`nav`(C# `NavGraph.Routes` 一字不差)、`runtime`(tokio 執行 task,結果經 channel 回成 Input)。VM 不碰 egui、不做 I/O,`Effect::Run(Task)` 由 shell 交給 executor。
+- **分層表變更**(xtask):`arcana-ui → arcana-domain`(VM 直接操作實體與驗證器);`arcana-app → arcana-infra`(組裝根要接 DB 與服務)。GUI 套件清單加 `egui_dock`、`egui_kittest`。
+- **頁面對照 C#**:Home(C# 卡片是寫死的 12 / $45,600 / 5 / 128 且不載最近訂單 → 改為實算)、OrderList(C# 有搜尋/狀態/日期欄位但查詢時沒帶上、欄位不能排序 → 都接上)、OrderDetail/新增訂單(欄位、品項格、合計、Copy/Edit/Save/Cancel/Print 同 C#;存檔前跑 domain `OrderValidator` 並顯示訊息)、Settings(9 個主題 + 強調色、語系即時切換、同步設定、C# TODO 的按鈕改顯示「開發中」)、PluginManager(列 C# 啟動時註冊的 5 個內建外掛;安裝/啟用/停用/重載/升級/回滾/解除安裝需 M5 runtime,灰掉並註明)。**ProductList/Detail、CustomerList/Detail 在 C# 只有「開發中」佔位頁**,這裡補了可用的清單 + 表單(泛型 `entity_list` / `entity_form`)。
+- **刻意偏離**:C# 每次啟動 `EnsureDeleted` 重建 DB;這裡只在空 DB 時 seed(`arcana_infra::seed`,同樣 5 客戶 / 3 類別 / 8 產品 / 10 訂單,但亂數用自訂 LCG 而非 .NET `Random(42)`)。C# 巢狀分頁(模組頁內再一層 DocumentTabHost)改為單層 dock;浮動視窗用 egui 多 viewport,不支援時(kittest)自動退回內嵌視窗。
+- **保留的 C# 怪行為**:更新訂單時被移除的品項不會從 DB 刪除(M2 repository 照 EF 行為)。
+- **NetworkMonitorImpl**:`arcana_infra::network::ProbeNetworkMonitor` —— 背景執行緒定期問可注入的 `Probe`;預設 `TcpProbe` 連 1.1.1.1:53 / 8.8.8.8:53,30 秒一次。
+- **字型**:egui 內建字型沒有中日文;啟動時從系統字型清單挑第一個存在的(PingFang / 微軟正黑 / Noto CJK…)當 fallback,不內嵌。
+- **UI 字串**:核心字串檔不動(M3 測試鎖了筆數);C# CoreMenu 外掛自帶的 locale 檔與本次新增字串以 plugin resources 註冊,查詢一律走 `get_from_any_plugin`。
+- **測試**:C# 沒有 App/ViewModel 測試可移植。每頁 VM 單元測試 + NavGraph/Command/Theme/格式化測試 + shell 邏輯測試(真服務 + in-memory DB)+ `egui_kittest` 主流程(訂單清單→分頁開明細→編輯→存檔、新增訂單驗證訊息、語系切換、主題/強調色、外掛清單 + 選單)。kittest 不用 renderer,CI 無需額外系統套件。
+- **截圖**:`cargo run -p arcana-app --features screenshots --bin screenshots -- docs/screen-rust`(wgpu 離屏繪製真 shell),輸出在 `docs/screen-rust/`,對照 C# `docs/screen/`。

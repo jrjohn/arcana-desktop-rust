@@ -7,8 +7,31 @@ license.workspace = true
 
 [dependencies]
 arcana-ui.workspace = true
+arcana-infra.workspace = true
 eframe.workspace = true
 egui.workspace = true
+tokio = { workspace = true, features = ["rt-multi-thread", "time"] }
+uuid.workspace = true
+tracing.workspace = true
+# Screenshot tool only (`cargo run -p arcana-app --features screenshots --bin screenshots`):
+# renders the real shell offscreen with wgpu. Not part of the CI build.
+egui_kittest = { workspace = true, optional = true, features = ["wgpu", "snapshot"] }
+
+[features]
+screenshots = ["dep:egui_kittest"]
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[[bin]]
+name = "arcana-app"
+path = "src/main.rs"
+
+[[bin]]
+name = "screenshots"
+path = "src/bin/screenshots.rs"
+required-features = ["screenshots"]
 
 [lints]
 workspace = true
+

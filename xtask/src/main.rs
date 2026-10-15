@@ -29,8 +29,14 @@ fn allowed() -> BTreeMap<&'static str, &'static [&'static str]> {
                 "arcana-plugin-host",
             ][..],
         ),
-        ("arcana-ui", &["arcana-core", "arcana-infra"][..]),
-        ("arcana-app", &["arcana-ui"][..]),
+        // ui: view models work on domain entities and validators (M4).
+        (
+            "arcana-ui",
+            &["arcana-core", "arcana-domain", "arcana-infra"][..],
+        ),
+        // app: the composition root wires infra services and the database before handing
+        // them to the shell (M4).
+        ("arcana-app", &["arcana-ui", "arcana-infra"][..]),
         ("arcana-plugin-flowchart", &["arcana-plugin-api"][..]),
         ("xtask", &[][..]),
     ])
@@ -38,7 +44,7 @@ fn allowed() -> BTreeMap<&'static str, &'static [&'static str]> {
 
 /// Only these crates may pull in the GUI toolkit; everything below the UI layer stays headless.
 const GUI_ALLOWED: &[&str] = &["arcana-ui", "arcana-app", "arcana-plugin-flowchart"];
-const GUI_CRATES: &[&str] = &["egui", "eframe"];
+const GUI_CRATES: &[&str] = &["egui", "eframe", "egui_dock", "egui_kittest"];
 
 fn check(meta: &cargo_metadata::Metadata) -> Vec<String> {
     let rules = allowed();
