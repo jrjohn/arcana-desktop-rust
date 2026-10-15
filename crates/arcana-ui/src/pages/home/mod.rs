@@ -29,9 +29,19 @@ pub struct Dashboard {
 /// How many recent orders the card lists.
 pub const RECENT_COUNT: u32 = 5;
 
+/// A contributed quick action (plugin `QuickAccess` menu item).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct QuickAction {
+    pub icon: String,
+    pub title: String,
+    pub command: String,
+}
+
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct State {
     pub dashboard: Dashboard,
+    /// Plugin-contributed quick actions; empty → the built-in four (C# `HomePage.xaml`).
+    pub quick_actions: Vec<QuickAction>,
     pub loading: bool,
     pub error: Option<String>,
 }
@@ -46,6 +56,10 @@ pub enum Input {
     ViewReports,
     ViewAllOrders,
     OpenOrder(i32),
+    /// The shell pushes the contributed quick actions (menu registry changed).
+    SetQuickActions(Vec<QuickAction>),
+    /// A contributed quick action was clicked.
+    RunCommand(String),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -96,6 +110,13 @@ impl ViewModel {
                 vec![Effect::Navigate(NavGraph::to_order_list())]
             }
             Input::OpenOrder(id) => vec![Effect::Navigate(NavGraph::to_order_detail(id, false))],
+            Input::SetQuickActions(mut q) => {
+                // Home is already open; its own "go home" entry is noise here.
+                q.retain(|a| a.command != "quick.home");
+                s.quick_actions = q;
+                vec![]
+            }
+            Input::RunCommand(c) => vec![Effect::Command(c)],
         }
     }
 }
@@ -128,6 +149,28 @@ mod tests {
         let fx = vm.on(Input::Loaded(Err("boom".into())));
         assert_eq!(fx, vec![Effect::Notify(Notice::error("boom"))]);
         assert_eq!(vm.state.error.as_deref(), Some("boom"));
+    }
+
+    #[test]
+    fn contributed_quick_actions_run_commands() {
+        let mut vm = ViewModel::default();
+        let qa = |c: &str| QuickAction {
+            icon: "•".into(),
+            title: c.into(),
+            command: c.into(),
+        };
+        assert!(
+            vm.on(Input::SetQuickActions(vec![
+                qa("quick.home"),
+                qa("order.new")
+            ]))
+            .is_empty()
+        );
+        assert_eq!(vm.state.quick_actions, vec![qa("order.new")]);
+        assert_eq!(
+            vm.on(Input::RunCommand("order.new".into())),
+            vec![Effect::Command("order.new".into())]
+        );
     }
 
     #[test]

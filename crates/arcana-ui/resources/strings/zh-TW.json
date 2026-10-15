@@ -73,5 +73,7 @@
   "ui.plugins.packagePath": "外掛套件目錄...",
   "ui.plugins.pendingPermissions": "待核准權限:{0}",
   "ui.plugins.permissions": "權限:",
-  "ui.plugins.settings": "設定"
+  "ui.plugins.settings": "設定",
+  "status.noCjkFont": "找不到中日文字型:中文/日文可能顯示為方塊",
+  "ui.module": "模組"
 }

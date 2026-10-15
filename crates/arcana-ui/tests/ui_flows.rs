@@ -121,7 +121,7 @@ fn order_list_detail_edit_save() {
 #[test]
 fn new_order_shows_domain_validation() {
     let (mut h, _env) = harness();
-    h.get_by_label("➕\n\nNew Order").click();
+    h.get_by_label("📄\n\nNew Order").click();
     settle(&mut h);
     h.get_by_label("💾 Save").click();
     h.run_steps(2);

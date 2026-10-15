@@ -54,6 +54,13 @@ pub enum Dialog {
         tab: TabId,
     },
     About,
+    /// A plugin asked a yes/no question (`WindowService::show_confirm`); the answer goes back
+    /// through `reply_command` with a `bool` argument.
+    PluginConfirm {
+        title: String,
+        message: String,
+        reply_command: Option<String>,
+    },
 }
 
 /// A visible toast.
@@ -84,6 +91,14 @@ pub struct Shell {
     exit_requested: bool,
     search: String,
     focus_search: bool,
+    /// Plugin confirmations waiting for the current dialog to close.
+    pending_confirms: std::collections::VecDeque<Dialog>,
+    /// Plugin status-bar items (`WindowService::set_status_bar_item`), by id.
+    status_items: BTreeMap<String, String>,
+    /// One-time "no CJK font" warning, until dismissed.
+    font_warning: bool,
+    /// Menu registry revision the contributed quick actions were last pushed at.
+    contrib_rev: Option<u64>,
 }
 
 impl std::fmt::Debug for Shell {
@@ -134,6 +149,10 @@ impl Shell {
             exit_requested: false,
             search: String::new(),
             focus_search: false,
+            pending_confirms: std::collections::VecDeque::new(),
+            status_items: BTreeMap::new(),
+            font_warning: false,
+            contrib_rev: None,
         };
         shell.navigate(&NavRequest::new_tab(Route::Home), None);
         shell
@@ -193,6 +212,23 @@ impl Shell {
         &self.toasts
     }
 
+    /// Tell the shell whether a CJK font was found; when not, the status bar shows a warning
+    /// once (until the user dismisses it).
+    pub fn set_font_status(&mut self, status: &crate::fonts::FontStatus) {
+        self.font_warning = *status == crate::fonts::FontStatus::Missing;
+    }
+
+    #[must_use]
+    pub fn font_warning(&self) -> bool {
+        self.font_warning
+    }
+
+    /// Plugin status-bar items, by id.
+    #[must_use]
+    pub fn status_items(&self) -> &BTreeMap<String, String> {
+        &self.status_items
+    }
+
     #[must_use]
     pub fn theme_id(&self) -> &str {
         &self.theme_id
@@ -248,6 +284,15 @@ impl Shell {
     /// Execute a navigation request (C# `NavigationService`). `origin` is the tab that asked
     /// (for within-tab navigation); `None` means the focused tab.
     pub fn navigate(&mut self, req: &NavRequest, origin: Option<TabId>) -> TabId {
+        let tab = self.navigate_inner(req, origin);
+        if req.route == Route::Home {
+            self.invalidate_contributions();
+            self.sync_contributions();
+        }
+        tab
+    }
+
+    fn navigate_inner(&mut self, req: &NavRequest, origin: Option<TabId>) -> TabId {
         let snapshot = self.settings_snapshot();
         if req.mode == NavMode::WithinTab
             && let Some(tab) = origin.or_else(|| self.focused_tab())
@@ -415,6 +460,7 @@ impl Shell {
                     self.svc.app_settings.set_language_code(&c);
                     plugins::relocalize(&self.svc.plugins);
                 }
+                Effect::Command(name) => self.run_plugin_command(&name),
             }
         }
     }
@@ -436,6 +482,19 @@ impl Shell {
         let Some(d) = self.dialog.take() else {
             return;
         };
+        self.dialog = self.pending_confirms.pop_front();
+        if let Dialog::PluginConfirm {
+            reply_command: Some(cmd),
+            ..
+        } = &d
+        {
+            let commands = self.svc.plugins.host.services.commands.clone();
+            if let Err(e) = commands.execute(cmd, vec![Box::new(yes)]) {
+                self.notify(Notice::error(e.to_user_message()));
+            }
+            self.pump_plugins();
+            return;
+        }
         if !yes {
             return;
         }
@@ -451,7 +510,7 @@ impl Shell {
                 }
             }
             Dialog::CloseDirty { tab } => self.close_tab(tab, true),
-            Dialog::About => {}
+            Dialog::About | Dialog::PluginConfirm { .. } => {}
         }
     }
 

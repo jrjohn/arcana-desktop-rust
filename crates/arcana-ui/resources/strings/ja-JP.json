@@ -73,5 +73,7 @@
   "ui.plugins.packagePath": "プラグインパッケージのフォルダー...",
   "ui.plugins.pendingPermissions": "承認待ちの権限: {0}",
   "ui.plugins.permissions": "権限:",
-  "ui.plugins.settings": "設定"
+  "ui.plugins.settings": "設定",
+  "status.noCjkFont": "CJK フォントが見つかりません:日本語/中国語が表示されない場合があります",
+  "ui.module": "モジュール"
 }

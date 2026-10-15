@@ -503,3 +503,91 @@ fn order_list_filters_hit_the_services() {
         .unwrap();
     assert_eq!(now.status, crate::fmt::next_status(target.status));
 }
+
+#[test]
+fn plugin_confirm_waits_for_the_answer_and_replies_through_the_command() {
+    use arcana_plugin_api::WindowService as _;
+    use std::sync::Mutex;
+    let mut f = fixture();
+    let rt = f.shell.services().plugins.clone();
+    let answers: Arc<Mutex<Vec<bool>>> = Arc::default();
+    let sink = answers.clone();
+    let _sub = rt
+        .host
+        .services
+        .commands
+        .register_command(
+            "test.reply",
+            Arc::new(move |args| {
+                let yes = args
+                    .first()
+                    .and_then(|a| a.downcast_ref::<bool>())
+                    .copied()
+                    .unwrap_or_default();
+                sink.lock().unwrap().push(yes);
+                Ok(())
+            }),
+        )
+        .unwrap();
+    rt.window.show_confirm("T1", "first?", Some("test.reply"));
+    rt.window.show_confirm("T2", "second?", Some("test.reply"));
+    f.shell.pump_plugins();
+    assert!(matches!(f.shell.dialog(), Some(Dialog::PluginConfirm { title, .. }) if title == "T1"));
+    assert!(answers.lock().unwrap().is_empty(), "nothing answered yet");
+    f.shell.answer_dialog(true);
+    assert!(matches!(f.shell.dialog(), Some(Dialog::PluginConfirm { title, .. }) if title == "T2"));
+    f.shell.answer_dialog(false);
+    assert!(f.shell.dialog().is_none());
+    assert_eq!(*answers.lock().unwrap(), vec![true, false]);
+    rt.window.set_status_bar_item("p.status", Some("busy"));
+    f.shell.pump_plugins();
+    assert_eq!(
+        f.shell.status_items().get("p.status").map(String::as_str),
+        Some("busy")
+    );
+}
+
+#[test]
+fn home_quick_actions_and_function_tree_come_from_contributions() {
+    use arcana_plugin_api::MenuLocation;
+    let mut f = fixture();
+    let home = f.shell.find_tab(&Route::Home).unwrap();
+    let Some(Page::Home(vm)) = f.shell.page_mut(home) else {
+        panic!()
+    };
+    let cmds: Vec<String> = vm
+        .state
+        .quick_actions
+        .iter()
+        .map(|a| a.command.clone())
+        .collect();
+    assert!(cmds.contains(&"order.new".to_owned()), "{cmds:?}");
+    assert!(cmds.contains(&"flowchart.new".to_owned()), "{cmds:?}");
+    let tree = super::plugins::function_tree(
+        &f.shell
+            .services()
+            .plugins
+            .host
+            .services
+            .menus
+            .all_menu_items(),
+        &["OrderListPage"],
+    );
+    assert!(
+        tree.iter()
+            .any(|c| c.command.as_deref() == Some("flowchart.new"))
+    );
+    let module = f
+        .shell
+        .contributed(MenuLocation::ModuleQuickAccess, Some("OrderModule"));
+    assert!(module.iter().any(|c| c.id == "module.order.new"));
+    // Clicking a contributed quick action runs the plugin command.
+    let before = f.shell.tabs().len();
+    f.shell.send(
+        home,
+        PageMsg::Home(crate::pages::home::Input::RunCommand(
+            "flowchart.new".into(),
+        )),
+    );
+    assert_eq!(f.shell.tabs().len(), before + 1);
+}

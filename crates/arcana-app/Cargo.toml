@@ -4,6 +4,8 @@ description = "Desktop entry point (C# Arcana.App)"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+authors = ["jrjohn"]
+repository.workspace = true
 
 [dependencies]
 arcana-ui.workspace = true
@@ -35,3 +37,16 @@ required-features = ["screenshots"]
 [lints]
 workspace = true
 
+
+# Packaging (see scripts/package.sh and README "Install").
+[package.metadata.deb]
+name = "arcana-desktop"
+maintainer = "jrjohn"
+section = "office"
+extended-description = "Arcana enterprise management desktop app (Rust + egui)."
+depends = "$auto, libgl1, libegl1, libxkbcommon0, libwayland-client0"
+assets = [
+    ["target/release/arcana-app", "usr/bin/", "755"],
+    ["../../packaging/arcana.desktop", "usr/share/applications/", "644"],
+    ["../../packaging/arcana.png", "usr/share/icons/hicolor/256x256/apps/", "644"],
+]
