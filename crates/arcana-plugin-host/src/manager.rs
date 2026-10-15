@@ -266,12 +266,14 @@ impl PluginHost {
     /// C# `ActivateAllAsync`: fire `onStartup`, activate built-ins in dependency order, then
     /// pending plugins that want startup activation. Failures are logged, not returned.
     pub fn activate_all(&self) {
-        self.activation
-            .fire(activation_events::ON_STARTUP);
+        self.activation.fire(activation_events::ON_STARTUP);
         let order = {
             let reg = self.reg();
-            let metas: Vec<PluginMetadata> =
-                reg.loaded.values().map(|l| l.plugin.metadata().clone()).collect();
+            let metas: Vec<PluginMetadata> = reg
+                .loaded
+                .values()
+                .map(|l| l.plugin.metadata().clone())
+                .collect();
             DependencyResolver::new().resolve_load_order(&metas)
         };
         let ids: Vec<String> = match order {
@@ -432,9 +434,11 @@ impl PluginHost {
     fn register_resources(&self, plugin: &dyn Plugin) {
         let id = &plugin.metadata().id;
         for (culture, res) in plugin.resources() {
-            self.services
-                .localization
-                .register_plugin_resources(id, &culture, res.into_iter().collect());
+            self.services.localization.register_plugin_resources(
+                id,
+                &culture,
+                res.into_iter().collect(),
+            );
         }
     }
 
@@ -486,9 +490,7 @@ impl PluginHost {
     /// C# `PluginManagerService.DeactivatePluginAsync`.
     pub fn deactivate_op(&self, id: &str) -> PluginOperationResult {
         match self.deactivate(id) {
-            Ok(()) => {
-                PluginOperationResult::succeeded(id, Some("Plugin deactivated successfully"))
-            }
+            Ok(()) => PluginOperationResult::succeeded(id, Some("Plugin deactivated successfully")),
             Err(e) => {
                 PluginOperationResult::failed(Some(id), e.message(), Some("DEACTIVATION_FAILED"))
             }
@@ -525,7 +527,11 @@ impl PluginHost {
     }
 
     /// C# `PluginInfo.FromManifest`.
-    pub(crate) fn info_of_manifest(m: &PluginManifest, path: &Path, at: DateTime<Utc>) -> PluginInfo {
+    pub(crate) fn info_of_manifest(
+        m: &PluginManifest,
+        path: &Path,
+        at: DateTime<Utc>,
+    ) -> PluginInfo {
         PluginInfo {
             id: m.id.clone(),
             name: if m.name.is_empty() {
@@ -600,11 +606,8 @@ impl PluginHost {
         }
         match self.plugin(id) {
             None => {
-                let mut s = PluginHealthStatus::new(
-                    id,
-                    "Unknown",
-                    arcana_plugin_api::HealthState::Unknown,
-                );
+                let mut s =
+                    PluginHealthStatus::new(id, "Unknown", arcana_plugin_api::HealthState::Unknown);
                 s.message = Some("Plugin not found".to_string());
                 s
             }

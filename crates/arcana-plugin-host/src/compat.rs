@@ -58,7 +58,10 @@ mod tests {
     fn lenient_versions() {
         assert_eq!(parse_lenient("1.2"), semver::Version::new(1, 2, 0));
         assert_eq!(parse_lenient("1.2.3.4"), semver::Version::new(1, 2, 3));
-        assert_eq!(parse_lenient("2.0.0-beta"), semver::Version::parse("2.0.0-beta").unwrap_or_else(|_| semver::Version::new(0, 0, 0)));
+        assert_eq!(
+            parse_lenient("2.0.0-beta"),
+            semver::Version::parse("2.0.0-beta").unwrap_or_else(|_| semver::Version::new(0, 0, 0))
+        );
         assert_eq!(parse_lenient("abc"), semver::Version::new(1, 0, 0));
         assert_eq!(parse_lenient("1"), semver::Version::new(1, 0, 0));
     }

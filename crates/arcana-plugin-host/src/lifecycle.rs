@@ -94,7 +94,11 @@ impl PluginHost {
             Ok(Some(_)) => self.store.update_version(&info).await,
             _ => self.store.add_version(&info).await,
         };
-        let r = r.and(self.store.set_current_version(id, &version.to_string()).await);
+        let r = r.and(
+            self.store
+                .set_current_version(id, &version.to_string())
+                .await,
+        );
         if let Err(e) = r {
             tracing::warn!(plugin = %id, error = %e, "version history not stored");
         }
@@ -131,8 +135,8 @@ impl PluginHost {
             let _ = remove_dir(&target);
             return op_err(Some(&id), &e, "INSTALL_FAILED");
         }
-        let Some(m) = ManifestService::manifest_path(&target)
-            .and_then(|p| self.manifests.load_manifest(&p))
+        let Some(m) =
+            ManifestService::manifest_path(&target).and_then(|p| self.manifests.load_manifest(&p))
         else {
             let _ = remove_dir(&target);
             return PluginOperationResult::failed(
@@ -271,9 +275,15 @@ impl PluginHost {
         let veto = self.with_plugin(id, |p| {
             p.as_upgradeable().map(|u| {
                 if !u.can_upgrade_to(&new_version) {
-                    Some(("UPGRADE_NOT_SUPPORTED", format!("Plugin cannot be upgraded to version {new_version}")))
+                    Some((
+                        "UPGRADE_NOT_SUPPORTED",
+                        format!("Plugin cannot be upgraded to version {new_version}"),
+                    ))
                 } else if !u.on_before_upgrade(&current, &new_version) {
-                    Some(("UPGRADE_REJECTED", "Plugin rejected the upgrade".to_string()))
+                    Some((
+                        "UPGRADE_REJECTED",
+                        "Plugin rejected the upgrade".to_string(),
+                    ))
                 } else {
                     None
                 }
@@ -339,9 +349,15 @@ impl PluginHost {
         let veto = self.with_plugin(id, |p| {
             p.as_upgradeable().map(|u| {
                 if !u.can_rollback_to(&target_v) {
-                    Some(("ROLLBACK_NOT_SUPPORTED", format!("Plugin cannot be rolled back to version {target}")))
+                    Some((
+                        "ROLLBACK_NOT_SUPPORTED",
+                        format!("Plugin cannot be rolled back to version {target}"),
+                    ))
                 } else if !u.on_before_rollback(&current, &target_v) {
-                    Some(("ROLLBACK_REJECTED", "Plugin rejected the rollback".to_string()))
+                    Some((
+                        "ROLLBACK_REJECTED",
+                        "Plugin rejected the rollback".to_string(),
+                    ))
                 } else {
                     None
                 }
@@ -428,5 +444,4 @@ impl PluginHost {
         self.permissions.approve_requested(id);
         PluginOperationResult::succeeded(id, Some("Permissions approved"))
     }
-
 }
