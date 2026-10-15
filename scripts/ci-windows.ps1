@@ -18,7 +18,8 @@ if (-not (Get-Command cargo -ErrorAction SilentlyContinue)) {
 }
 Run rustup @('toolchain', 'install', 'stable', '--profile', 'minimal')
 Run rustup @('target', 'add', 'wasm32-unknown-unknown')
-$wt = (& wasm-tools --version 2>$null) -join ''
+$wt = ''
+if (Get-Command wasm-tools -ErrorAction SilentlyContinue) { $wt = (& wasm-tools --version) -join '' }
 if ($wt -notmatch '^wasm-tools 1\.262\.0') { Run cargo @('install', 'wasm-tools', '--version', '1.262.0', '--locked') }
 Run rustc @('--version')
 # Example WASM plugin component for the sandbox tests (scripts/build-wasm-example.sh).

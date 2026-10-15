@@ -19,3 +19,7 @@ bash scripts/build-wasm-example.sh
 cargo test --workspace --locked
 cargo build --release --locked -p arcana-app
 ls -l target/release/arcana-app
+# On macOS also prove the .app/.dmg packaging works (ad-hoc signed; release build reused).
+if [ "$(uname -s)" = Darwin ]; then
+  bash scripts/package.sh macos
+fi

@@ -106,6 +106,7 @@ pipeline {
                     steps {
                         sh 'bash scripts/ci-native.sh'
                     }
+                    post { success { archiveArtifacts artifacts: 'dist/*.dmg', allowEmptyArchive: true } }
                 }
             }
         }

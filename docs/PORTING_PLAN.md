@@ -90,3 +90,16 @@ Marketplace、When-expression、同步伺服器、DB 加密、登入頁。
 - **分層表**:`arcana-ui` 可依賴 `arcana-plugin-api`、`arcana-plugin-host`、`arcana-plugin-flowchart`(繪製外掛貢獻 + FlowChart 文件分頁)。
 - **kittest**:PluginManager 停用→啟用(狀態 Active↔Deactivated、`menu.business.order` 消失/出現、toast)、Tools → FlowChart → New FlowChart 開分頁 + Add Node + Undo;既有「Business → Product → Product Management」改走巢狀外掛選單。
 - **截圖對照**(`docs/screen-rust/flowchart.png` vs C# `docs/screen/Flow Chart Plugin.png`):同樣有工具列、格線畫布、屬性面板、狀態列;差異 —— C# 左側有「Shapes」形狀清單面板(這裡是工具列下拉選單)、側欄有 FunctionTree 的「FlowChart」項(這裡側欄仍是固定清單,沒讀 `FunctionTree` 貢獻)、屬性面板 C# 有 Diagram Name / Description / Show Grid / Snap / Grid Size(這裡未選取時只顯示「Nothing selected」)、工具列 C# 有圖示 + 文字。
+
+## 9. 里程碑 6 紀錄(三平台 + M5 缺口)
+
+### M5 缺口收尾
+- **外掛貢獻驅動導覽**:側欄在 C# 的靜態項目之外,於「報表」前插入 `FunctionTree` 貢獻(同 C# `BuildFunctionTree`:分隔線 + 依 `order`,`Command ?? Id` 與內建項目重複者略過);選單列右側「⚡ 快速操作」= `QuickAccess`(依 `group` 插分隔線,同 C# `QuickActionsFlyout`);焦點在訂單/產品/客戶頁時多一個「▾ 模組」= 該模組的 `ModuleQuickAccess`(C# `OrderModulePage` flyout)。Home 快速操作按鈕改讀 `QuickAccess` 貢獻(C# 是 XAML 寫死;沒有任何外掛時退回原本四顆)。選單登錄表 `revision` 變動時由 shell 推給 Home(`home::Input::SetQuickActions`),點擊走新的 `Effect::Command` → 外掛 `CommandService`。Segoe MDL2 圖示碼以 `icon_glyph` 對到 egui 字型畫得出的字元。
+- **外掛確認對話框**:`WindowRequest::Confirm` 不再變 toast,改為 modal(`Dialog::PluginConfirm`),多個依序排隊;使用者回答後以 `bool` 參數執行外掛給的 `reply_command`(C# `await ShowConfirmAsync` 的等價物)。`set_status_bar_item` 也真的顯示在狀態列。
+- **原生檔案對話框 / FlowChart**:見下方「FlowChart」與 PR 說明。
+
+### 三平台
+- **CJK 字型**:`fonts::select(os, windows_dir, exists)` 為純函式,依 OS 優先序 —— Windows:Microsoft JhengHei → Yu Gothic UI → Microsoft YaHei(`%WINDIR%\Fonts`);macOS:PingFang TC → Hiragino Sans;Linux:Noto Sans CJK(Debian/Arch/Fedora 路徑)→ WenQuanYi。測試以注入的字型清單驗證。都找不到時狀態列顯示一次性警告(可關閉)。
+- **GUI 冒煙測試**:`ARCANA_SMOKE_SCREENSHOT=<ppm>` 讓真 app 畫 30 幀後用 `ViewportCommand::Screenshot` 取 framebuffer,少於 16 色視為空白(exit 2),存檔後自行關閉。`scripts/gui-smoke.sh` 在 `Dockerfile.ci --target gui`(Xvfb、weston、mesa 軟體 GL、Noto CJK)內各跑一次 X11 與 Wayland(weston headless + pixman)。
+- **CI**:Jenkinsfile 改為 `parallel` 三平台,任一紅即整體紅;`lock('ci-rust-build')` 只包 Linux(bluesea Docker),Sonar 留在 Linux。Windows(label `windows`)跑 `scripts/ci-windows.ps1`、macOS(label `macos`)跑 `scripts/ci-native.sh`:缺 cargo 時以 rustup 裝到建置使用者家目錄(可逆:`rustup self uninstall`),再 `cargo test --workspace` + release build。
+- **打包**:release-please(`simple`,同 fleet)切版後,同一個 workflow 呼叫 `.github/workflows/package.yml` 在 GitHub hosted runner 產出 .msi(cargo-wix)、.dmg(.app,ad-hoc 簽章)、.deb(cargo-deb)、AppImage(linuxdeploy)並上傳 Release。選 GitHub Actions 不選 Jenkins `buildingTag()`:GITHUB_TOKEN 建的 release 不會觸發其他 workflow、multibranch job 沒有探索 tag、Windows agent 是辦公室筆電(Wi-Fi 掉線紀錄),hosted runner 每次都是乾淨的 WiX/hdiutil/FUSE 環境。PR 改到打包檔案時只建不傳。

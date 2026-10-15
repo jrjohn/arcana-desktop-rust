@@ -11,6 +11,7 @@ cd "$root"
 version=${2:-$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)}
 version=${version#v}
 arch=$(uname -m)
+T=${CARGO_TARGET_DIR:-target}
 mkdir -p dist
 cargo build --release -p arcana-app
 
@@ -24,7 +25,7 @@ linux)
   rm -rf target/AppDir
   APPIMAGE_EXTRACT_AND_RUN=1 LINUXDEPLOY_OUTPUT_VERSION="$version" OUTPUT="dist/Arcana-$version-$arch.AppImage" \
     "$tool" --appdir target/AppDir \
-      --executable target/release/arcana-app \
+      --executable "$T/release/arcana-app" \
       --desktop-file packaging/arcana.desktop \
       --icon-file packaging/arcana.png \
       --output appimage
@@ -32,7 +33,7 @@ linux)
 macos)
   app="target/Arcana.app"
   rm -rf "$app"; mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
-  cp target/release/arcana-app "$app/Contents/MacOS/arcana-app"
+  cp "$T/release/arcana-app" "$app/Contents/MacOS/arcana-app"
   iconset="target/arcana.iconset"; rm -rf "$iconset"; mkdir -p "$iconset"
   for s in 16 32 128 256; do
     sips -z $s $s packaging/arcana.png --out "$iconset/icon_${s}x${s}.png" >/dev/null
