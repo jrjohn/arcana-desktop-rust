@@ -16,6 +16,7 @@ arcana-data = { path = "crates/arcana-data" }
 arcana-sync = { path = "crates/arcana-sync" }
 arcana-plugin-api = { path = "crates/arcana-plugin-api" }
 arcana-plugin-host = { path = "crates/arcana-plugin-host" }
+arcana-plugin-wasm = { path = "crates/arcana-plugin-wasm" }
 arcana-infra = { path = "crates/arcana-infra" }
 arcana-ui = { path = "crates/arcana-ui" }
 thiserror = "2"
@@ -49,6 +50,8 @@ semver = { version = "1", features = ["serde"] }
 quick-xml = "0.39"
 flate2 = "1"
 percent-encoding = "2"
+wasmtime = { version = "49", default-features = false, features = ["runtime", "cranelift", "component-model", "std", "anyhow"] }
+wat = "1"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

@@ -157,6 +157,11 @@ pub trait Plugin: Send {
     fn as_health_check(&self) -> Option<&dyn PluginHealthCheck> {
         None
     }
+    /// Declarative UI tree (form / table / list …) as JSON, for plugins that cannot draw
+    /// themselves (WASM). The host renders it.
+    fn ui_tree(&mut self) -> Option<serde_json::Value> {
+        None
+    }
     fn as_hot_reload(&mut self) -> Option<&mut dyn PluginHotReload> {
         None
     }

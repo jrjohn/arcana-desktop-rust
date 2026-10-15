@@ -227,12 +227,14 @@ impl PluginHost {
     }
 
     /// Load the new instance so hooks (`IPluginUpgradeable`, `IPluginHotReload`) can run on
-    /// it; C# gets this from re-discovery with lazy loading off.
+    /// it; C# gets this from re-discovery with lazy loading off. Loads without activating:
+    /// an inactive plugin must stay inactive across upgrade / rollback / reload.
     fn ensure_loaded(&self, id: &str) {
-        if self.is_pending(id)
-            && let Err(e) = self.activate(id)
+        let pending = self.reg().pending.get(id).cloned();
+        if let Some(p) = pending
+            && let Err(e) = self.load_pending(&p)
         {
-            tracing::warn!(plugin = %id, error = %e, "reload activation");
+            tracing::warn!(plugin = %id, error = %e, "reload load");
         }
     }
 

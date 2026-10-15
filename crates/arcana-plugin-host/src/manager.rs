@@ -350,7 +350,7 @@ impl PluginHost {
         self.reg().pending.contains_key(id)
     }
 
-    fn load_pending(&self, pending: &Pending) -> AppResult<()> {
+    pub(crate) fn load_pending(&self, pending: &Pending) -> AppResult<()> {
         let id = &pending.manifest.id;
         let loader = self
             .loaders
@@ -418,6 +418,9 @@ impl PluginHost {
             reg.busy.insert(id.to_string(), l.plugin.metadata().clone());
             (l, state)
         };
+        // Drop lazy placeholders before the plugin registers the real contributions (an
+        // instance loaded for upgrade/reload hooks still has them).
+        self.lazy.on_plugin_activated(id);
         let deps = loaded.plugin.metadata().dependencies.clone();
         let result = deps
             .iter()
