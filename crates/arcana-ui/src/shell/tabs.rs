@@ -1,53 +1,12 @@
-//! Document tabs: a page plus its within-tab back stack, and the `egui_dock` viewer.
+//! The `egui_dock` viewer for document tabs (the [`Tab`] model lives in the view model).
 
 use egui::{Id, Ui, WidgetText};
 use egui_dock::TabViewer;
 use egui_dock::tab_viewer::OnCloseResponse;
 
-use super::TabId;
-use crate::pages::{Page, PageMsg};
+use super::{Tab, TabId};
+use crate::pages::PageMsg;
 use crate::widgets::ViewCx;
-
-/// One document tab (C# `DocumentTabHost` document).
-#[derive(Debug)]
-pub struct Tab {
-    pub id: TabId,
-    pub page: Page,
-    back: Vec<Page>,
-}
-
-impl Tab {
-    #[must_use]
-    pub fn new(id: TabId, page: Page) -> Self {
-        Self {
-            id,
-            page,
-            back: Vec::new(),
-        }
-    }
-
-    /// Navigate within the tab, keeping the current page on the back stack.
-    pub fn push(&mut self, page: Page) {
-        let old = std::mem::replace(&mut self.page, page);
-        self.back.push(old);
-    }
-
-    /// Go back within the tab; `false` when there is nothing to go back to.
-    pub fn back(&mut self) -> bool {
-        match self.back.pop() {
-            Some(p) => {
-                self.page = p;
-                true
-            }
-            None => false,
-        }
-    }
-
-    #[must_use]
-    pub fn can_go_back(&self) -> bool {
-        !self.back.is_empty()
-    }
-}
 
 /// What the viewer collected while drawing.
 #[derive(Debug, Default)]
@@ -118,26 +77,5 @@ impl TabViewer for Viewer<'_> {
         // The shell decides (unsaved changes ask first).
         self.out.close.push(*tab);
         OnCloseResponse::Ignore
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::pages::plugin_manager;
-
-    #[test]
-    fn back_stack_push_and_pop() {
-        let mut t = Tab::new(
-            TabId(1),
-            Page::PluginManager(plugin_manager::ViewModel::default()),
-        );
-        assert!(!t.can_go_back());
-        assert!(!t.back());
-        t.push(Page::Settings(crate::pages::settings::ViewModel::default()));
-        assert!(t.can_go_back());
-        assert!(matches!(t.page, Page::Settings(_)));
-        assert!(t.back());
-        assert!(matches!(t.page, Page::PluginManager(_)));
     }
 }

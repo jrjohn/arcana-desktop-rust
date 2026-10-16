@@ -6,7 +6,9 @@
 
 use std::str::FromStr;
 
-use arcana_core::{AppError, AppResult, AuditInfo, ErrorCode, SoftDeleteInfo, SyncInfo, Timestamp};
+use arcana_core::{
+    AppError, AppResult, AuditInfo, ErrorCode, PageRequest, SoftDeleteInfo, SyncInfo, Timestamp,
+};
 use rust_decimal::Decimal;
 use sqlx::Row;
 use sqlx::sqlite::{SqliteArguments, SqliteConnection, SqliteRow};
@@ -300,6 +302,36 @@ pub(crate) async fn execute_on(
         .await
         .map(|r| r.rows_affected())
         .map_err(db_error)
+}
+
+// Paging / sorting helpers shared by the DAOs and the generic repository. They live here, at
+// the DAO level, so the DAO layer never reaches up into `repository`.
+
+/// Build `ORDER BY` for a caller-supplied property name. Only real columns are accepted, which
+/// both mirrors EF (`EF.Property` on an unknown name throws) and rules out SQL injection.
+pub(crate) fn order_by<T: TableEntity>(request: &PageRequest) -> AppResult<Option<String>> {
+    match request.sort_by.as_deref().filter(|s| !s.is_empty()) {
+        None => Ok(None),
+        Some(col) if T::has_column(col) => Ok(Some(format!(
+            " ORDER BY \"{col}\" {}",
+            if request.descending { "DESC" } else { "ASC" }
+        ))),
+        Some(col) => Err(AppError::data(
+            ErrorCode::QueryFailed,
+            format!("unknown sort column '{col}' for {}", T::TABLE),
+        )),
+    }
+}
+
+pub(crate) fn limit_offset(request: &PageRequest) -> [SqlValue; 2] {
+    [
+        SqlValue::Int(i64::from(request.page_size)),
+        SqlValue::Int(i64::try_from(request.skip()).unwrap_or(i64::MAX)),
+    ]
+}
+
+pub(crate) fn to_u64(n: i64) -> u64 {
+    u64::try_from(n).unwrap_or(0)
 }
 
 #[cfg(test)]

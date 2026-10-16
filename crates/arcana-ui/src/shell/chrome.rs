@@ -62,8 +62,8 @@ const NAV_BOTTOM: &[(&str, &str, &str, Option<CommandId>)] = &[
 impl Shell {
     fn palette(&self, ctx: &egui::Context) -> theme::Palette {
         theme::palette(
-            theme::find(&self.theme_id),
-            self.accent,
+            theme::find(&self.vm.theme_id),
+            self.vm.accent,
             ctx.theme() == egui::Theme::Dark,
         )
     }
@@ -71,48 +71,48 @@ impl Shell {
     /// Draw one frame of the whole application.
     pub fn show(&mut self, ui: &mut Ui) {
         let ctx = ui.ctx().clone();
-        self.exec.set_repaint_context(&ctx);
-        if self.theme_dirty {
-            theme::apply(&ctx, theme::find(&self.theme_id), self.accent);
-            self.theme_dirty = false;
+        self.vm.executor().set_repaint_context(&ctx);
+        if self.vm.theme_dirty {
+            theme::apply(&ctx, theme::find(&self.vm.theme_id), self.vm.accent);
+            self.vm.theme_dirty = false;
         }
         self.pump();
         self.pump_plugins();
         self.sync_contributions();
-        for cmd in CommandRegistry::take_shortcuts(&ctx) {
+        for cmd in super::shortcuts::take_shortcuts(&ctx) {
             self.execute(cmd);
         }
-        if self.exit_requested {
+        if self.vm.exit_requested {
             ctx.send_viewport_cmd(ViewportCommand::Close);
-            self.exit_requested = false;
+            self.vm.exit_requested = false;
         }
-        ctx.send_viewport_cmd(ViewportCommand::Fullscreen(self.fullscreen));
+        ctx.send_viewport_cmd(ViewportCommand::Fullscreen(self.vm.fullscreen));
         let now = Instant::now();
-        self.toasts.retain(|t| t.until > now);
-        if !self.toasts.is_empty() || self.exec.in_flight() > 0 {
+        self.vm.toasts.retain(|t| t.until > now);
+        if !self.vm.toasts.is_empty() || self.vm.executor().in_flight() > 0 {
             ctx.request_repaint_after(std::time::Duration::from_millis(250));
         }
 
         let palette = self.palette(&ctx);
-        let l10n = self.svc.localization.clone();
+        let strings = self.vm.services().localization.clone();
         let cx = ViewCx {
-            l10n: l10n.as_ref(),
+            l10n: l10n::Strings::new(strings.as_ref()),
             palette,
         };
 
         egui::Panel::top("menu_bar").show(ui, |ui| self.menu_bar(ui, &cx));
-        if self.statusbar_visible {
+        if self.vm.statusbar_visible {
             egui::Panel::bottom("status_bar").show(ui, |ui| self.status_bar(ui, &cx));
         }
         egui::Panel::left("side_nav")
             .resizable(false)
-            .exact_size(if self.sidebar_open { 240.0 } else { 48.0 })
+            .exact_size(if self.vm.sidebar_open { 240.0 } else { 48.0 })
             .frame(egui::Frame::new().fill(palette.pane).inner_margin(8))
             .show(ui, |ui| self.side_nav(ui, &cx));
         let mut out = ViewerOutput::default();
         egui::CentralPanel::default().show(ui, |ui| {
             let mut viewer = Viewer {
-                tabs: &mut self.tabs,
+                tabs: &mut self.vm.tabs,
                 cx,
                 out: ViewerOutput::default(),
             };
@@ -122,7 +122,7 @@ impl Shell {
                 .show_leaf_close_all_buttons(false)
                 .show_inside(ui, &mut viewer);
             out = viewer.out;
-            if self.tabs.is_empty() {
+            if self.vm.tabs.is_empty() {
                 ui.centered_and_justified(|ui| ui.label(cx.t("common.noDocuments")));
             }
         });
@@ -231,9 +231,9 @@ impl Shell {
                 .desired_width(300.0)
                 .id_salt("command_search"),
         );
-        if self.focus_search {
+        if self.vm.focus_search {
             r.request_focus();
-            self.focus_search = false;
+            self.vm.focus_search = false;
         }
         let hits = CommandRegistry::search(&self.search, |c| cx.t(c.label_key));
         if r.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
@@ -272,11 +272,11 @@ impl Shell {
         let Some(cmd) = cmd else {
             if icon.is_empty() {
                 ui.add_space(8.0);
-                if self.sidebar_open {
+                if self.vm.sidebar_open {
                     ui.label(RichText::new(cx.t(key)).strong());
                 }
             } else {
-                let text = if self.sidebar_open {
+                let text = if self.vm.sidebar_open {
                     format!("{icon}  {}", cx.t(key))
                 } else {
                     icon.to_owned()
@@ -286,7 +286,7 @@ impl Shell {
             }
             return;
         };
-        let text = if self.sidebar_open {
+        let text = if self.vm.sidebar_open {
             format!("{icon}  {}", cx.t(key))
         } else {
             icon.to_owned()
@@ -304,7 +304,7 @@ impl Shell {
 
     fn contributed_nav_item(&mut self, ui: &mut Ui, item: &super::plugins::Contribution) {
         let icon = super::plugins::icon_glyph(item.icon.as_deref());
-        let text = if self.sidebar_open {
+        let text = if self.vm.sidebar_open {
             format!("{icon}  {}", item.title)
         } else {
             icon.to_owned()
@@ -363,7 +363,7 @@ impl Shell {
                     self.execute(CommandId::Back);
                 }
             });
-            let tip = if self.sidebar_open {
+            let tip = if self.vm.sidebar_open {
                 "tooltip.closeNavigation"
             } else {
                 "tooltip.openNavigation"
@@ -383,7 +383,14 @@ impl Shell {
                 .filter(|s| !s.is_empty())
                 .collect();
             let tree = super::plugins::function_tree(
-                &self.svc.plugins.host.services.menus.all_menu_items(),
+                &self
+                    .vm
+                    .services()
+                    .plugins
+                    .host
+                    .services
+                    .menus
+                    .all_menu_items(),
                 &existing,
             );
             for row in NAV_TOP {
@@ -407,13 +414,13 @@ impl Shell {
     fn status_bar(&mut self, ui: &mut Ui, cx: &ViewCx<'_>) {
         let mut dismiss_font = false;
         ui.horizontal(|ui| {
-            let busy = self.exec.in_flight() > 0;
+            let busy = self.vm.executor().in_flight() > 0;
             ui.label(if busy {
                 cx.t("status.syncing")
             } else {
                 cx.t("status.ready")
             });
-            for text in self.status_items.values() {
+            for text in self.vm.status_items.values() {
                 ui.separator();
                 ui.label(text);
             }
@@ -430,7 +437,7 @@ impl Shell {
             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                 ui.label(chrono::Local::now().format("%Y/%m/%d %H:%M:%S").to_string());
                 ui.label(format!("🔄 {}", cx.t("status.synced")));
-                let online = self.svc.network.is_online();
+                let online = self.vm.services().network.is_online();
                 let (icon, key) = if online {
                     ("📶", "status.online")
                 } else {
@@ -446,8 +453,8 @@ impl Shell {
 
     fn floating_windows(&mut self, ctx: &egui::Context, cx: &ViewCx<'_>, out: &mut ViewerOutput) {
         let mut dock_back = Vec::new();
-        for tab_id in self.floating.clone() {
-            let Some(tab) = self.tabs.get_mut(&tab_id) else {
+        for tab_id in self.vm.floating.clone() {
+            let Some(tab) = self.vm.tabs.get_mut(&tab_id) else {
                 continue;
             };
             let title = tab.page.title(cx);
@@ -484,47 +491,18 @@ impl Shell {
     }
 
     fn dialogs(&mut self, ctx: &egui::Context, cx: &ViewCx<'_>) {
-        let Some(d) = self.dialog.clone() else {
+        let Some(d) = self.vm.dialog.clone() else {
             return;
         };
-        let (title, body, ok) = match &d {
-            Dialog::Delete { label, .. } => (
-                cx.t("common.delete"),
-                l10n::t_with(cx.l10n, "ui.confirmDelete", std::slice::from_ref(label)),
-                cx.t("common.delete"),
-            ),
-            Dialog::Discard { .. } | Dialog::CloseDirty { .. } => (
-                cx.t("common.discardChanges"),
-                cx.t("common.discardChangesMessage"),
-                cx.t("common.discardChanges"),
-            ),
-            Dialog::PluginConfirm { title, message, .. } => {
-                (title.clone(), message.clone(), cx.t("common.ok"))
-            }
-            Dialog::About => (
-                cx.t("menu.help.about"),
-                l10n::t_with(
-                    cx.l10n,
-                    "app.about.content",
-                    &[env!("CARGO_PKG_VERSION").to_owned()],
-                ),
-                cx.t("common.ok"),
-            ),
-        };
+        let (title, body, ok) = dialog_text(&d, cx);
+        let cancel = (!matches!(d, Dialog::About)).then(|| cx.t("common.cancel"));
         let mut answer = None;
         egui::Modal::new(egui::Id::new("shell_dialog")).show(ctx, |ui| {
             ui.set_width(380.0);
             ui.heading(title);
             ui.label(body);
             ui.add_space(8.0);
-            ui.horizontal(|ui| {
-                if ui.button(ok).clicked() {
-                    answer = Some(true);
-                }
-                if !matches!(d, Dialog::About) && ui.button(cx.t("common.cancel")).clicked() {
-                    answer = Some(false);
-                }
-            });
+            answer = ui.horizontal(|ui| dialog_buttons(ui, ok, cancel)).inner;
         });
         if let Some(a) = answer {
             self.answer_dialog(a);
@@ -532,32 +510,75 @@ impl Shell {
     }
 
     fn toasts_overlay(&self, ctx: &egui::Context, cx: &ViewCx<'_>) {
-        if self.toasts.is_empty() {
+        if self.vm.toasts.is_empty() {
             return;
         }
         egui::Area::new(egui::Id::new("toasts"))
             .anchor(egui::Align2::RIGHT_BOTTOM, [-16.0, -40.0])
             .order(egui::Order::Foreground)
             .show(ctx, |ui| {
-                for t in &self.toasts {
-                    let color = match t.notice.level {
-                        NoticeLevel::Info => cx.palette.info,
-                        NoticeLevel::Success => cx.palette.success,
-                        NoticeLevel::Warning => Color32::from_rgb(230, 140, 0),
-                        NoticeLevel::Error => Color32::from_rgb(196, 43, 28),
-                    };
-                    egui::Frame::new()
-                        .fill(color)
-                        .corner_radius(6)
-                        .inner_margin(10)
-                        .show(ui, |ui| {
-                            ui.label(
-                                RichText::new(l10n::text(cx.l10n, &t.notice.text))
-                                    .color(Color32::WHITE),
-                            );
-                        });
+                for t in &self.vm.toasts {
+                    toast(ui, &t.notice, cx);
                     ui.add_space(4.0);
                 }
             });
     }
+}
+
+/// Heading, body and confirm-button label of a shell dialog.
+fn dialog_text(d: &Dialog, cx: &ViewCx<'_>) -> (String, String, String) {
+    match d {
+        Dialog::Delete { label, .. } => (
+            cx.t("common.delete"),
+            cx.tw("ui.confirmDelete", std::slice::from_ref(label)),
+            cx.t("common.delete"),
+        ),
+        Dialog::Discard { .. } | Dialog::CloseDirty { .. } => (
+            cx.t("common.discardChanges"),
+            cx.t("common.discardChangesMessage"),
+            cx.t("common.discardChanges"),
+        ),
+        Dialog::PluginConfirm { title, message, .. } => {
+            (title.clone(), message.clone(), cx.t("common.ok"))
+        }
+        Dialog::About => about_text(cx),
+    }
+}
+
+fn about_text(cx: &ViewCx<'_>) -> (String, String, String) {
+    let version = env!("CARGO_PKG_VERSION").to_owned();
+    (
+        cx.t("menu.help.about"),
+        cx.tw("app.about.content", &[version]),
+        cx.t("common.ok"),
+    )
+}
+
+/// OK (and optional Cancel) buttons; returns the answer if one was clicked.
+fn dialog_buttons(ui: &mut egui::Ui, ok: String, cancel: Option<String>) -> Option<bool> {
+    if ui.button(ok).clicked() {
+        return Some(true);
+    }
+    cancel
+        .is_some_and(|c| ui.button(c).clicked())
+        .then_some(false)
+}
+
+fn toast_color(level: NoticeLevel, cx: &ViewCx<'_>) -> Color32 {
+    match level {
+        NoticeLevel::Info => cx.palette.info,
+        NoticeLevel::Success => cx.palette.success,
+        NoticeLevel::Warning => Color32::from_rgb(230, 140, 0),
+        NoticeLevel::Error => Color32::from_rgb(196, 43, 28),
+    }
+}
+
+fn toast(ui: &mut egui::Ui, notice: &crate::effect::Notice, cx: &ViewCx<'_>) {
+    egui::Frame::new()
+        .fill(toast_color(notice.level, cx))
+        .corner_radius(6)
+        .inner_margin(10)
+        .show(ui, |ui| {
+            ui.label(RichText::new(cx.l10n.text(&notice.text)).color(Color32::WHITE));
+        });
 }

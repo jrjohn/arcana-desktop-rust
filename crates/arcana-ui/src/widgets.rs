@@ -1,6 +1,5 @@
 //! Shared drawing helpers and the per-frame view context.
 
-use arcana_infra::LocalizationService;
 use egui::{Color32, CornerRadius, Frame, Margin, RichText, Stroke, Ui};
 
 use crate::l10n;
@@ -9,7 +8,7 @@ use crate::theme::Palette;
 /// What every view gets: strings and colours.
 #[derive(Clone, Copy)]
 pub struct ViewCx<'a> {
-    pub l10n: &'a dyn LocalizationService,
+    pub l10n: l10n::Strings<'a>,
     pub palette: Palette,
 }
 
@@ -17,13 +16,13 @@ impl ViewCx<'_> {
     /// Localized string.
     #[must_use]
     pub fn t(&self, key: &str) -> String {
-        l10n::t(self.l10n, key)
+        self.l10n.t(key)
     }
 
     /// Localized string with `{0}`… arguments.
     #[must_use]
     pub fn tw(&self, key: &str, args: &[String]) -> String {
-        l10n::t_with(self.l10n, key, args)
+        self.l10n.tw(key, args)
     }
 }
 
@@ -95,14 +94,14 @@ pub fn messages(ui: &mut Ui, list: &[String]) {
 mod tests {
     use super::*;
     use crate::theme;
-    use arcana_infra::LocalizationServiceImpl;
+    use arcana_infra::{LocalizationService as _, LocalizationServiceImpl};
 
     #[test]
     fn helpers_draw_without_panicking() {
         let l = LocalizationServiceImpl::new();
         l.set_culture("en-US");
         let cx = ViewCx {
-            l10n: &l,
+            l10n: l10n::Strings::new(&l),
             palette: theme::palette(theme::find("Light"), None, false),
         };
         assert_eq!(cx.t("nav.home"), "Home");

@@ -4,9 +4,60 @@
 //! Ids and shortcuts follow the C# `CoreMenuPlugin` / module plugins (`file.new` = Ctrl+N,
 //! `view.refresh` = F5, `app.settings` = Ctrl+, …).
 
-use egui::{Key, KeyboardShortcut, Modifiers};
-
 use crate::nav::{NavGraph, NavRequest};
+
+/// A key a shortcut can be bound to — UI-agnostic; the view translates it to the toolkit's key.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Key {
+    N,
+    O,
+    S,
+    W,
+    Y,
+    Z,
+    K,
+    Comma,
+    ArrowLeft,
+    F4,
+    F5,
+    F11,
+}
+
+/// Modifier keys held with a shortcut. `command` is Ctrl (Cmd on macOS).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+pub struct Modifiers {
+    pub command: bool,
+    pub alt: bool,
+}
+
+impl Modifiers {
+    pub const NONE: Self = Self {
+        command: false,
+        alt: false,
+    };
+    pub const COMMAND: Self = Self {
+        command: true,
+        alt: false,
+    };
+    pub const ALT: Self = Self {
+        command: false,
+        alt: true,
+    };
+}
+
+/// A keyboard shortcut in the view model's own terms (no GUI toolkit types).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct KeyboardShortcut {
+    pub modifiers: Modifiers,
+    pub key: Key,
+}
+
+impl KeyboardShortcut {
+    #[must_use]
+    pub const fn new(modifiers: Modifiers, key: Key) -> Self {
+        Self { modifiers, key }
+    }
+}
 
 /// Every command the shell understands.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -264,23 +315,6 @@ impl CommandRegistry {
             _ => return None,
         })
     }
-
-    /// Consume pressed shortcuts from egui input, returning the triggered commands.
-    #[must_use]
-    pub fn take_shortcuts(ctx: &egui::Context) -> Vec<CommandId> {
-        ctx.input_mut(|i| {
-            COMMANDS
-                .iter()
-                .filter_map(|c| c.shortcut.filter(|s| i.consume_shortcut(s)).map(|_| c.id))
-                .collect()
-        })
-    }
-
-    /// Human-readable shortcut for menus.
-    #[must_use]
-    pub fn shortcut_text(ctx: &egui::Context, id: CommandId) -> Option<String> {
-        Self::get(id).shortcut.map(|s| ctx.format_shortcut(&s))
-    }
 }
 
 #[cfg(test)]
@@ -293,10 +327,7 @@ mod tests {
         let ids: HashSet<_> = COMMANDS.iter().map(|c| c.id).collect();
         let names: HashSet<_> = COMMANDS.iter().map(|c| c.name).collect();
         let shortcuts: Vec<_> = COMMANDS.iter().filter_map(|c| c.shortcut).collect();
-        let unique: HashSet<_> = shortcuts
-            .iter()
-            .map(|s| (s.modifiers.command, s.modifiers.alt, s.logical_key))
-            .collect();
+        let unique: HashSet<_> = shortcuts.iter().copied().collect();
         assert_eq!(ids.len(), COMMANDS.len());
         assert_eq!(names.len(), COMMANDS.len());
         assert_eq!(unique.len(), shortcuts.len());
@@ -337,26 +368,5 @@ mod tests {
             !CommandRegistry::search("search", |c| c.label_key.to_owned())
                 .contains(&CommandId::CommandSearch)
         );
-    }
-
-    #[test]
-    fn shortcuts_are_consumed_from_input() {
-        let ctx = egui::Context::default();
-        let mut input = egui::RawInput::default();
-        input.events.push(egui::Event::Key {
-            key: Key::F5,
-            physical_key: None,
-            pressed: true,
-            repeat: false,
-            modifiers: NONE,
-        });
-        let mut fired = Vec::new();
-        ctx.run_ui(input, |ui| {
-            fired = CommandRegistry::take_shortcuts(ui.ctx());
-        })
-        .drop_without_applying_deltas();
-        assert_eq!(fired, vec![CommandId::Refresh]);
-        assert!(CommandRegistry::shortcut_text(&ctx, CommandId::Save).is_some());
-        assert!(CommandRegistry::shortcut_text(&ctx, CommandId::Cut).is_none());
     }
 }

@@ -11,7 +11,7 @@ use super::generic::{
     SqliteRepository, begin_implicit, delegate_repository, finish_implicit, insert_on, update_on,
 };
 use crate::dao::{
-    CustomerDao, CustomerDaoImpl, OrderDao, OrderDaoImpl, OrderFilter, ProductDao, ProductDaoImpl,
+    CustomerDao, OrderDao, OrderFilter, ProductDao, customer_dao, order_dao, product_dao,
 };
 use crate::db::Db;
 
@@ -42,7 +42,7 @@ impl CustomerRepositoryImpl {
     /// Wire the default DAO on the same database.
     #[must_use]
     pub fn with_db(db: Db) -> Self {
-        Self::new(db.clone(), Arc::new(CustomerDaoImpl::new(db)))
+        Self::new(db.clone(), customer_dao(db))
     }
 
     async fn add_impl(&self, e: Customer) -> AppResult<Customer> {
@@ -101,7 +101,7 @@ impl ProductRepositoryImpl {
     /// Wire the default DAO on the same database.
     #[must_use]
     pub fn with_db(db: Db) -> Self {
-        Self::new(db.clone(), Arc::new(ProductDaoImpl::new(db)))
+        Self::new(db.clone(), product_dao(db))
     }
 
     async fn add_impl(&self, e: Product) -> AppResult<Product> {
@@ -178,7 +178,7 @@ impl OrderRepositoryImpl {
     /// Wire the default DAO on the same database.
     #[must_use]
     pub fn with_db(db: Db) -> Self {
-        Self::new(db.clone(), Arc::new(OrderDaoImpl::new(db)))
+        Self::new(db.clone(), order_dao(db))
     }
 
     async fn save_items(
@@ -268,4 +268,22 @@ impl OrderRepository for OrderRepositoryImpl {
     ) -> AppResult<PagedResult<Order>> {
         self.dao.find_paged_with_filters(request, filter).await
     }
+}
+
+/// Default [`CustomerRepository`] on `db` (factory: callers depend on the trait, not the impl).
+#[must_use]
+pub fn customer_repository(db: Db) -> impl CustomerRepository + Clone {
+    CustomerRepositoryImpl::with_db(db)
+}
+
+/// Default [`ProductRepository`] on `db`.
+#[must_use]
+pub fn product_repository(db: Db) -> impl ProductRepository + Clone {
+    ProductRepositoryImpl::with_db(db)
+}
+
+/// Default [`OrderRepository`] on `db`.
+#[must_use]
+pub fn order_repository(db: Db) -> impl OrderRepository + Clone {
+    OrderRepositoryImpl::with_db(db)
 }

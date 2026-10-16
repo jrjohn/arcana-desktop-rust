@@ -8,14 +8,8 @@ use std::path::Path;
 use std::sync::{Arc, Mutex, PoisonError};
 
 use arcana_data::Db;
-use arcana_plugin_api::{HostServices, LocalizationService, MessageBusExt, Plugin};
-use arcana_plugin_host::services::command::CommandServiceImpl;
-use arcana_plugin_host::services::event_aggregator::EventAggregatorImpl;
-use arcana_plugin_host::services::menu::MenuRegistryImpl;
-use arcana_plugin_host::services::message_bus::MessageBusImpl;
+use arcana_plugin_api::{LocalizationService, MessageBusExt, Plugin};
 use arcana_plugin_host::services::nav::QueuedNavGraph;
-use arcana_plugin_host::services::shared_state::SharedStateStoreImpl;
-use arcana_plugin_host::services::view::ViewRegistryImpl;
 use arcana_plugin_host::services::window::QueuedWindowService;
 use arcana_plugin_host::{HostPaths, PluginHost};
 
@@ -69,18 +63,12 @@ impl PluginRuntime {
     ) -> Self {
         let nav = QueuedNavGraph::new(KNOWN_ROUTES.iter().map(|r| (*r).to_string()));
         let window = QueuedWindowService::new();
-        let bus = Arc::new(MessageBusImpl::new());
-        let services = HostServices {
-            commands: Arc::new(CommandServiceImpl::new()),
-            window: Arc::new(window.clone()),
-            message_bus: bus.clone(),
-            events: Arc::new(EventAggregatorImpl::new()),
-            shared_state: Arc::new(SharedStateStoreImpl::new()),
-            menus: Arc::new(MenuRegistryImpl::new()),
-            views: Arc::new(ViewRegistryImpl::new()),
-            nav_graph: Arc::new(nav.clone()),
+        let services = crate::wiring::plugin_host_services(
+            Arc::new(window.clone()),
+            Arc::new(nav.clone()),
             localization,
-        };
+        );
+        let bus = services.message_bus.clone();
         let shell_commands: Arc<Mutex<Vec<String>>> = Arc::default();
         let sink = shell_commands.clone();
         // Lives as long as the bus; intentionally never disposed.

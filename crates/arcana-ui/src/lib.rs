@@ -13,9 +13,12 @@ pub mod fonts;
 pub mod l10n;
 pub mod nav;
 pub mod pages;
+pub mod plugin_bridge;
+pub mod plugin_menu;
 pub mod runtime;
 pub mod services;
 pub mod shell;
+pub mod shell_vm;
 pub mod theme;
 pub mod widgets;
 

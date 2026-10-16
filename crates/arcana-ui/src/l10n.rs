@@ -40,6 +40,36 @@ pub fn register(l10n: &dyn LocalizationService) {
     }
 }
 
+/// The view-facing handle on UI strings: views get their text through this (via
+/// [`crate::widgets::ViewCx`]) instead of reaching the localization service themselves.
+#[derive(Clone, Copy)]
+pub struct Strings<'a>(&'a dyn LocalizationService);
+
+impl<'a> Strings<'a> {
+    #[must_use]
+    pub const fn new(l10n: &'a dyn LocalizationService) -> Self {
+        Self(l10n)
+    }
+
+    /// `key` in the current culture.
+    #[must_use]
+    pub fn t(&self, key: &str) -> String {
+        t(self.0, key)
+    }
+
+    /// `key` with `{0}`… replaced by `args`.
+    #[must_use]
+    pub fn tw(&self, key: &str, args: &[String]) -> String {
+        t_with(self.0, key, args)
+    }
+
+    /// Resolve a [`Text`].
+    #[must_use]
+    pub fn text(&self, text: &Text) -> String {
+        self::text(self.0, text)
+    }
+}
+
 /// `key` in the current culture.
 #[must_use]
 pub fn t(l10n: &dyn LocalizationService, key: &str) -> String {
