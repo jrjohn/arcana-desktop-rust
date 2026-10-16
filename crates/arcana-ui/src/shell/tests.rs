@@ -8,6 +8,7 @@ use arcana_infra::security::TokenServiceOptions;
 use arcana_infra::wiring::{ArcanaConfig, ArcanaServices};
 
 use super::*;
+use crate::effect::NoticeLevel;
 use crate::pages::{order_detail, order_list};
 
 const WAIT: Duration = Duration::from_secs(10);

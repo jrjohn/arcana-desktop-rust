@@ -7,6 +7,7 @@ use super::Shell;
 use crate::commands::{CommandId, CommandRegistry};
 use crate::effect::{Notice, NoticeLevel, Text};
 use crate::plugin_bridge::{self, ShellAction};
+use crate::shell_vm::ShellInput;
 
 pub use crate::plugin_menu::{
     Contribution, MenuNode, contributions, function_tree, icon_glyph, menu_tree, module_of,
@@ -18,7 +19,14 @@ impl Shell {
     #[must_use]
     pub fn contributed(&self, location: MenuLocation, module: Option<&str>) -> Vec<Contribution> {
         contributions(
-            &self.svc.plugins.host.services.menus.all_menu_items(),
+            &self
+                .vm
+                .services()
+                .plugins
+                .host
+                .services
+                .menus
+                .all_menu_items(),
             location,
             module,
         )
@@ -26,7 +34,7 @@ impl Shell {
 
     /// Push the contributed quick actions to Home pages when the menu registry changed.
     pub(super) fn sync_contributions(&mut self) {
-        let rev = self.svc.plugins.host.services.menus.revision();
+        let rev = self.vm.services().plugins.host.services.menus.revision();
         if self.contrib_rev == Some(rev) {
             return;
         }
@@ -56,7 +64,8 @@ impl Shell {
     }
 
     fn home_tabs(&self) -> Vec<super::TabId> {
-        self.tabs
+        self.vm
+            .tabs
             .iter()
             .filter(|(_, t)| matches!(t.page, crate::pages::Page::Home(_)))
             .map(|(id, _)| *id)
@@ -71,7 +80,16 @@ impl Shell {
     /// The plugin-contributed main menu.
     #[must_use]
     pub fn plugin_menu(&self) -> Vec<MenuNode> {
-        menu_tree(&self.svc.plugins.host.services.menus.all_menu_items())
+        menu_tree(
+            &self
+                .vm
+                .services()
+                .plugins
+                .host
+                .services
+                .menus
+                .all_menu_items(),
+        )
     }
 
     /// Whether a plugin menu command is currently enabled (shell commands follow
@@ -79,38 +97,54 @@ impl Shell {
     #[must_use]
     pub fn plugin_command_enabled(&self, name: &str) -> bool {
         match CommandRegistry::by_name(name) {
-            Some(cmd) if !self.svc.plugins.host.services.commands.has_command(name) => {
+            Some(cmd)
+                if !self
+                    .vm
+                    .services()
+                    .plugins
+                    .host
+                    .services
+                    .commands
+                    .has_command(name) =>
+            {
                 self.is_enabled(cmd)
             }
             Some(cmd @ (CommandId::Undo | CommandId::Redo | CommandId::Save)) => {
                 self.is_enabled(cmd)
             }
-            _ => self.svc.plugins.host.services.commands.has_command(name),
+            _ => self
+                .vm
+                .services()
+                .plugins
+                .host
+                .services
+                .commands
+                .has_command(name),
         }
     }
 
     /// Run a command from a plugin menu (C# `CommandService.ExecuteAsync`), then apply
     /// whatever it queued.
     pub fn run_plugin_command(&mut self, name: &str) {
-        let commands = self.svc.plugins.host.services.commands.clone();
+        let commands = self.vm.services().plugins.host.services.commands.clone();
         if commands.has_command(name) {
             if let Err(e) = commands.execute(name, Vec::new()) {
-                self.notify(Notice::error(e.to_user_message()));
+                self.dispatch(ShellInput::Notify(Notice::error(e.to_user_message())));
             }
         } else if let Some(cmd) = CommandRegistry::by_name(name) {
             self.execute(cmd);
         } else {
-            self.notify(Notice::new(
+            self.dispatch(ShellInput::Notify(Notice::new(
                 NoticeLevel::Info,
                 Text::Key("common.developing"),
-            ));
+            )));
         }
         self.pump_plugins();
     }
 
     /// Apply navigation, shell commands and window requests plugins queued.
     pub fn pump_plugins(&mut self) {
-        for action in plugin_bridge::drain(&self.svc.plugins) {
+        for action in plugin_bridge::drain(&self.vm.services().plugins) {
             self.apply_plugin(action);
         }
     }
@@ -120,7 +154,7 @@ impl Shell {
             ShellAction::Navigate(req) => {
                 self.navigate(&req, None);
             }
-            ShellAction::Notify(n) => self.notify(n),
+            ShellAction::Notify(n) => self.dispatch(ShellInput::Notify(n)),
             ShellAction::Back => self.on_focused(|s, t| {
                 s.back(t);
             }),
@@ -128,33 +162,14 @@ impl Shell {
                 s.close_tab(t, false);
             }),
             ShellAction::Execute(cmd) => self.execute(cmd),
-            ShellAction::Confirm(c) => self.queue_confirm(c.into()),
-            ShellAction::Status { id, text } => self.set_status(id, text),
+            ShellAction::Confirm(c) => self.dispatch(ShellInput::Confirm(c.into())),
+            ShellAction::Status { id, text } => self.dispatch(ShellInput::Status { id, text }),
         }
     }
 
     fn on_focused(&mut self, f: impl FnOnce(&mut Self, super::TabId)) {
         if let Some(t) = self.focused_tab() {
             f(self, t);
-        }
-    }
-
-    fn queue_confirm(&mut self, d: super::Dialog) {
-        if self.dialog.is_none() {
-            self.dialog = Some(d);
-        } else {
-            self.pending_confirms.push_back(d);
-        }
-    }
-
-    fn set_status(&mut self, id: String, text: Option<String>) {
-        match text {
-            Some(t) => {
-                self.status_items.insert(id, t);
-            }
-            None => {
-                self.status_items.remove(&id);
-            }
         }
     }
 }
