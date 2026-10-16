@@ -109,6 +109,16 @@ impl std::fmt::Debug for Shell {
     }
 }
 
+impl From<crate::plugin_bridge::ConfirmRequest> for Dialog {
+    fn from(c: crate::plugin_bridge::ConfirmRequest) -> Self {
+        Self::PluginConfirm {
+            title: c.title,
+            message: c.message,
+            reply_command: c.reply_command,
+        }
+    }
+}
+
 impl Shell {
     /// Window title shown by the desktop entry point.
     pub const TITLE: &'static str = "Arcana - Enterprise Management System";

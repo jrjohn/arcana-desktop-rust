@@ -197,37 +197,48 @@ pub struct Palette {
 /// base of the `System` preset.
 #[must_use]
 pub fn palette(theme: &ThemeDef, accent: Option<usize>, system_dark: bool) -> Palette {
-    let dark = match theme.base {
-        BaseTheme::System => system_dark,
-        BaseTheme::Light => false,
-        BaseTheme::Dark => true,
-    };
-    // The System preset follows the OS: in dark mode use the Dark preset's surfaces.
-    let surfaces = if theme.base == BaseTheme::System && dark {
-        &THEMES[2]
-    } else {
-        theme
-    };
-    let accent = accent
-        .and_then(|i| ACCENTS.get(i))
-        .map_or(rgb(theme.accent), |c| rgb(*c));
+    let dark = is_dark(theme.base, system_dark);
+    let surfaces = surfaces(theme, dark);
     let bg = rgb(surfaces.background);
-    let card = if dark {
-        bg.blend(Color32::from_white_alpha(12))
-    } else {
-        bg.blend(Color32::from_white_alpha(140))
-    };
     Palette {
         dark,
-        accent,
+        accent: accent_color(theme, accent),
         background: bg,
         pane: rgb(surfaces.pane),
-        card,
+        card: card_color(bg, dark),
         text: rgb(surfaces.text_primary),
         text_weak: rgb(surfaces.text_secondary),
         success: Color32::from_rgb(16, 110, 16),
         info: Color32::from_rgb(64, 180, 240),
     }
+}
+
+fn is_dark(base: BaseTheme, system_dark: bool) -> bool {
+    match base {
+        BaseTheme::System => system_dark,
+        BaseTheme::Light => false,
+        BaseTheme::Dark => true,
+    }
+}
+
+/// The System preset follows the OS: in dark mode use the Dark preset's surfaces.
+fn surfaces(theme: &ThemeDef, dark: bool) -> &ThemeDef {
+    if theme.base == BaseTheme::System && dark {
+        &THEMES[2]
+    } else {
+        theme
+    }
+}
+
+fn accent_color(theme: &ThemeDef, accent: Option<usize>) -> Color32 {
+    accent
+        .and_then(|i| ACCENTS.get(i))
+        .map_or(rgb(theme.accent), |c| rgb(*c))
+}
+
+fn card_color(bg: Color32, dark: bool) -> Color32 {
+    let alpha = if dark { 12 } else { 140 };
+    bg.blend(Color32::from_white_alpha(alpha))
 }
 
 /// egui visuals for a palette.
@@ -310,7 +321,10 @@ mod tests {
             palette(forest, Some(99), false).accent,
             Color32::from_rgb(46, 125, 50)
         );
+    }
 
+    #[test]
+    fn system_palette_follows_the_os() {
         let sys = find("System");
         assert!(palette(sys, None, true).dark);
         assert_eq!(

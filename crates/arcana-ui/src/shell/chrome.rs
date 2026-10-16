@@ -487,40 +487,15 @@ impl Shell {
         let Some(d) = self.dialog.clone() else {
             return;
         };
-        let (title, body, ok) = match &d {
-            Dialog::Delete { label, .. } => (
-                cx.t("common.delete"),
-                cx.tw("ui.confirmDelete", std::slice::from_ref(label)),
-                cx.t("common.delete"),
-            ),
-            Dialog::Discard { .. } | Dialog::CloseDirty { .. } => (
-                cx.t("common.discardChanges"),
-                cx.t("common.discardChangesMessage"),
-                cx.t("common.discardChanges"),
-            ),
-            Dialog::PluginConfirm { title, message, .. } => {
-                (title.clone(), message.clone(), cx.t("common.ok"))
-            }
-            Dialog::About => (
-                cx.t("menu.help.about"),
-                cx.tw("app.about.content", &[env!("CARGO_PKG_VERSION").to_owned()]),
-                cx.t("common.ok"),
-            ),
-        };
+        let (title, body, ok) = dialog_text(&d, cx);
+        let cancel = (!matches!(d, Dialog::About)).then(|| cx.t("common.cancel"));
         let mut answer = None;
         egui::Modal::new(egui::Id::new("shell_dialog")).show(ctx, |ui| {
             ui.set_width(380.0);
             ui.heading(title);
             ui.label(body);
             ui.add_space(8.0);
-            ui.horizontal(|ui| {
-                if ui.button(ok).clicked() {
-                    answer = Some(true);
-                }
-                if !matches!(d, Dialog::About) && ui.button(cx.t("common.cancel")).clicked() {
-                    answer = Some(false);
-                }
-            });
+            answer = ui.horizontal(|ui| dialog_buttons(ui, ok, cancel)).inner;
         });
         if let Some(a) = answer {
             self.answer_dialog(a);
@@ -536,23 +511,67 @@ impl Shell {
             .order(egui::Order::Foreground)
             .show(ctx, |ui| {
                 for t in &self.toasts {
-                    let color = match t.notice.level {
-                        NoticeLevel::Info => cx.palette.info,
-                        NoticeLevel::Success => cx.palette.success,
-                        NoticeLevel::Warning => Color32::from_rgb(230, 140, 0),
-                        NoticeLevel::Error => Color32::from_rgb(196, 43, 28),
-                    };
-                    egui::Frame::new()
-                        .fill(color)
-                        .corner_radius(6)
-                        .inner_margin(10)
-                        .show(ui, |ui| {
-                            ui.label(
-                                RichText::new(cx.l10n.text(&t.notice.text)).color(Color32::WHITE),
-                            );
-                        });
+                    toast(ui, &t.notice, cx);
                     ui.add_space(4.0);
                 }
             });
     }
+}
+
+/// Heading, body and confirm-button label of a shell dialog.
+fn dialog_text(d: &Dialog, cx: &ViewCx<'_>) -> (String, String, String) {
+    match d {
+        Dialog::Delete { label, .. } => (
+            cx.t("common.delete"),
+            cx.tw("ui.confirmDelete", std::slice::from_ref(label)),
+            cx.t("common.delete"),
+        ),
+        Dialog::Discard { .. } | Dialog::CloseDirty { .. } => (
+            cx.t("common.discardChanges"),
+            cx.t("common.discardChangesMessage"),
+            cx.t("common.discardChanges"),
+        ),
+        Dialog::PluginConfirm { title, message, .. } => {
+            (title.clone(), message.clone(), cx.t("common.ok"))
+        }
+        Dialog::About => about_text(cx),
+    }
+}
+
+fn about_text(cx: &ViewCx<'_>) -> (String, String, String) {
+    let version = env!("CARGO_PKG_VERSION").to_owned();
+    (
+        cx.t("menu.help.about"),
+        cx.tw("app.about.content", &[version]),
+        cx.t("common.ok"),
+    )
+}
+
+/// OK (and optional Cancel) buttons; returns the answer if one was clicked.
+fn dialog_buttons(ui: &mut egui::Ui, ok: String, cancel: Option<String>) -> Option<bool> {
+    if ui.button(ok).clicked() {
+        return Some(true);
+    }
+    cancel
+        .is_some_and(|c| ui.button(c).clicked())
+        .then_some(false)
+}
+
+fn toast_color(level: NoticeLevel, cx: &ViewCx<'_>) -> Color32 {
+    match level {
+        NoticeLevel::Info => cx.palette.info,
+        NoticeLevel::Success => cx.palette.success,
+        NoticeLevel::Warning => Color32::from_rgb(230, 140, 0),
+        NoticeLevel::Error => Color32::from_rgb(196, 43, 28),
+    }
+}
+
+fn toast(ui: &mut egui::Ui, notice: &crate::effect::Notice, cx: &ViewCx<'_>) {
+    egui::Frame::new()
+        .fill(toast_color(notice.level, cx))
+        .corner_radius(6)
+        .inner_margin(10)
+        .show(ui, |ui| {
+            ui.label(RichText::new(cx.l10n.text(&notice.text)).color(Color32::WHITE));
+        });
 }

@@ -84,6 +84,10 @@ mod tests {
             s(CommandId::Exit),
             egui::KeyboardShortcut::new(egui::Modifiers::ALT, egui::Key::F4)
         );
+    }
+
+    #[test]
+    fn every_shortcut_keeps_its_modifiers() {
         for c in COMMANDS {
             if let Some(sc) = c.shortcut {
                 let e = to_egui(sc);
