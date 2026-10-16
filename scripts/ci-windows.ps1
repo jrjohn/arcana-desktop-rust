@@ -51,6 +51,11 @@ $wt = ''
 if (Get-Command wasm-tools -ErrorAction SilentlyContinue) { $wt = (& wasm-tools --version) -join '' }
 if ($wt -notmatch '^wasm-tools 1\.262\.0') { Run cargo @('install', 'wasm-tools', '--version', '1.262.0', '--locked') }
 Run rustc @('--version')
+# This agent is a persistent native Windows box (no container, no ephemeral workspace):
+# an interrupted build (agent disconnect mid-compile) leaves corrupt incremental .rmeta
+# files in target/, which every later build then reuses and fails on (E0786 invalid
+# metadata) regardless of source changes. Start each run from a known-clean target/.
+Run cargo @('clean')
 # Example WASM plugin component for the sandbox tests (scripts/build-wasm-example.sh).
 Run cargo @('build', '--release', '--target', 'wasm32-unknown-unknown', '--manifest-path', 'plugins-wasm/example/Cargo.toml', '--target-dir', 'target/wasm-example')
 New-Item -ItemType Directory -Force -Path 'target/wasm' | Out-Null
