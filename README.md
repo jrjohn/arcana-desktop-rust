@@ -444,7 +444,7 @@ and `cargo xtask layers` run in the same gate.
 ## CI
 
 Jenkins (`Jenkinsfile`, job `desktop-rust-app-pipeline-mb`) runs three platforms in parallel; any
-red fails the build. Last main build (#13): **Linux ✅ Windows ✅ macOS ✅**.
+red fails the build. Last main build (#15): **Linux ✅ Windows ✅ macOS ✅**.
 
 | Platform | Agent | Steps |
 |---|---|---|
