@@ -31,14 +31,12 @@ a plugin system (built-in + sandboxed WASM), and CRDT offline sync. Runs on Wind
 </p>
 <!-- arch-rank END -->
 
-> **About the arch-qube score.** CI scans with the backend `rust` profile (threshold 90): **100/100,
-> 14 rules evaluated, 7 not evaluated**. That profile has no view/view-model layer, so the UI rules
-> pass vacuously — `arcana-ui` is never classified. The stricter `rust-desktop` profile
-> ([arcana-arch-qube#12](https://github.com/jrjohn/arcana-arch-qube/pull/12), not merged yet)
-> classifies every file and scores **97.8 with 10 real layer-direction findings** (view model ↔ view
-> types, view → infra / plugin host, dao → repository helpers) plus 6 `Impl` imports in
-> `infra/plugin_runtime.rs`, so its gate fails today. The badge shows what CI measures; the
-> stricter number is the honest one for the UI layers.
+> **About the arch-qube score.** CI scans with the `rust-desktop` profile (arch-qube ≥ 0.5.0, threshold 90):
+> **100/100, 9 rules evaluated, 6 not evaluated** (AI-only or not applicable — excluded from the score, never
+> counted as passes). Every one of the 233 source files is classified into a layer (view, view model, service,
+> repository, dao, domain, core, sync, plugin), so the UI rules are actually checked. Earlier CI runs used the
+> backend `rust` profile, which left `arcana-ui` unclassified; the switch surfaced real findings that were
+> fixed in #13–#15 rather than allowed.
 
 ---
 
@@ -457,16 +455,16 @@ Both native agents install rustup for the build user first if cargo is missing. 
 
 ## Architecture Evaluation
 
-### Overall Rating: ⭐⭐⭐⭐ 8.5/10
+### Overall Rating: ⭐⭐⭐⭐ 8.7/10
 
 Scored with the same category-table rubric as the other Arcana READMEs; every score cites the
 measurement behind it, and the overall is the plain average.
 
 | Category | Score | Evidence |
 |---|---|---|
-| **Clean Architecture** | 8.5/10 | Layer allow-list enforced in CI (`cargo xtask layers`); arch-qube `rust` 100, but the stricter `rust-desktop` profile finds 10 direction violations (97.8) |
+| **Clean Architecture** | 9.5/10 | Two independent gates in CI: crate allow-list (`cargo xtask layers`) and arch-qube `rust-desktop` 100/100 with every file classified; Impl types named only in the composition root |
 | **Plugin System** | 9.0/10 | Built-in + Wasmtime component sandbox, permission-gated imports, semver dependency resolution; plugin-host 391 tests |
-| **MVVM UDF** | 8.5/10 | Input/State/Effect, I/O only via effects; some view-model ↔ view type coupling (rust-desktop findings) |
+| **MVVM UDF** | 9.0/10 | Input/State/Effect on every page and on the shell (`ShellViewModel`); views only render and emit inputs (arch-qube boundary-logic check passes) |
 | **Sync Engine** | 9.0/10 | Vector clocks, LWW/MV registers, 5 strategies, property tests; 138 tests, 97.6% line coverage |
 | **Security** | 8.5/10 | PBKDF2-SHA256 100k iterations with versioned hashes, authorization + permission manager; no at-rest DB encryption |
 | **Testing** | 9.0/10 | 1,254 tests, 88.2% line coverage; `arcana-app` 52.8%, GUI covered by kittest flows + Linux GUI smoke |
@@ -486,7 +484,6 @@ measurement behind it, and the overall is the plain average.
 
 | Aspect | Trade-off | Mitigation |
 |---|---|---|
-| **arch-qube coverage of UI** | CI profile does not classify `arcana-ui` | Move to `rust-desktop` once arcana-arch-qube#12 lands and the 10 findings are fixed |
 | **Unsigned installers** | SmartScreen / Gatekeeper prompts on first run | Signing + notarization listed as follow-ups |
 | **Immediate-mode UI** | egui redraws every frame; no native widgets | Effects keep I/O off the UI thread |
 
