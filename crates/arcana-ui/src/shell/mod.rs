@@ -7,6 +7,7 @@
 
 mod chrome;
 pub mod plugins;
+pub mod shortcuts;
 mod tabs;
 #[cfg(test)]
 mod tests;
@@ -32,9 +33,7 @@ pub const ACCENT_KEY: &str = "app.accent";
 /// How long a toast stays visible.
 const TOAST_TTL: Duration = Duration::from_secs(4);
 
-/// Stable identity of a document tab.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct TabId(pub u64);
+pub use crate::runtime::TabId;
 
 /// A modal question.
 #[derive(Debug, Clone, PartialEq, Eq)]

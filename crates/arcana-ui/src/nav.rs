@@ -244,6 +244,55 @@ impl NavGraph {
     }
 }
 
+/// A navigation request a plugin queued, in the UI's own terms. The shell only ever sees this
+/// type; the translation from the plugin host's queue type happens here, in the view model.
+#[derive(Debug)]
+pub enum PluginNavRequest {
+    /// Open `route_id` (plugin `NavigateTo` / `NavigateToNewTab` — both open a tab here).
+    Open {
+        route_id: String,
+        parameter: Option<Box<dyn std::any::Any + Send>>,
+    },
+    /// Navigate inside the focused tab.
+    WithinTab {
+        route_id: String,
+        parameter: Option<Box<dyn std::any::Any + Send>>,
+    },
+    Back,
+    Forward,
+    Close,
+}
+
+impl From<arcana_plugin_host::services::nav::NavRequest> for PluginNavRequest {
+    fn from(req: arcana_plugin_host::services::nav::NavRequest) -> Self {
+        use arcana_plugin_host::services::nav::NavRequest as Host;
+        match req {
+            Host::To {
+                route_id,
+                parameter,
+            }
+            | Host::NewTab {
+                route_id,
+                parameter,
+            } => Self::Open {
+                route_id,
+                parameter,
+            },
+            Host::WithinTab {
+                route_id,
+                parameter,
+                ..
+            } => Self::WithinTab {
+                route_id,
+                parameter,
+            },
+            Host::Back => Self::Back,
+            Host::Forward => Self::Forward,
+            Host::Close => Self::Close,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -348,5 +397,39 @@ mod tests {
             !Route::CustomerDetail { id: None }.same_document(&Route::CustomerDetail { id: None })
         );
         assert_eq!(d(Some(1)).nav_section(), routes::ORDER_LIST);
+    }
+
+    #[test]
+    fn plugin_nav_requests_translate_to_ui_terms() {
+        use arcana_plugin_host::services::nav::NavRequest as Host;
+        let open = |r| matches!(PluginNavRequest::from(r), PluginNavRequest::Open { route_id, .. } if route_id == "X");
+        assert!(open(Host::To {
+            route_id: "X".into(),
+            parameter: None
+        }));
+        assert!(open(Host::NewTab {
+            route_id: "X".into(),
+            parameter: None
+        }));
+        assert!(matches!(
+            PluginNavRequest::from(Host::WithinTab {
+                parent_route_id: "P".into(),
+                route_id: "X".into(),
+                parameter: None
+            }),
+            PluginNavRequest::WithinTab { route_id, .. } if route_id == "X"
+        ));
+        assert!(matches!(
+            PluginNavRequest::from(Host::Back),
+            PluginNavRequest::Back
+        ));
+        assert!(matches!(
+            PluginNavRequest::from(Host::Forward),
+            PluginNavRequest::Forward
+        ));
+        assert!(matches!(
+            PluginNavRequest::from(Host::Close),
+            PluginNavRequest::Close
+        ));
     }
 }

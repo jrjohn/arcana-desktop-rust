@@ -15,6 +15,14 @@ use arcana_data::{CustomerRepositoryImpl, Db, OrderRepositoryImpl, ProductReposi
 use arcana_domain::services::{CustomerService, OrderService, ProductService};
 use arcana_domain::{CustomerValidator, OrderValidator, ProductValidator};
 
+use arcana_plugin_api::{HostServices, NavGraph, WindowService};
+use arcana_plugin_host::services::command::CommandServiceImpl;
+use arcana_plugin_host::services::event_aggregator::EventAggregatorImpl;
+use arcana_plugin_host::services::menu::MenuRegistryImpl;
+use arcana_plugin_host::services::message_bus::MessageBusImpl;
+use arcana_plugin_host::services::shared_state::SharedStateStoreImpl;
+use arcana_plugin_host::services::view::ViewRegistryImpl;
+
 use crate::localization::{LocalizationService, LocalizationServiceImpl};
 use crate::security::{
     AuditLogger, AuthServiceImpl, AuthorizationServiceImpl, CurrentUserServiceImpl,
@@ -22,6 +30,27 @@ use crate::security::{
 };
 use crate::services::{CustomerServiceImpl, OrderServiceImpl, ProductServiceImpl};
 use crate::settings::{AppSettingsService, JsonSettingsService, SettingsService, app_data_dir};
+
+/// The shared plugin services (C# `AddPluginServices`): the in-process host implementations
+/// behind their `arcana_plugin_api` traits. The window and navigation services are passed in
+/// because the plugin runtime keeps its own handles on them to drain their queues.
+pub(crate) fn plugin_host_services(
+    window: Arc<dyn WindowService>,
+    nav_graph: Arc<dyn NavGraph>,
+    localization: Arc<dyn arcana_plugin_api::LocalizationService>,
+) -> HostServices {
+    HostServices {
+        commands: Arc::new(CommandServiceImpl::new()),
+        window,
+        message_bus: Arc::new(MessageBusImpl::new()),
+        events: Arc::new(EventAggregatorImpl::new()),
+        shared_state: Arc::new(SharedStateStoreImpl::new()),
+        menus: Arc::new(MenuRegistryImpl::new()),
+        views: Arc::new(ViewRegistryImpl::new()),
+        nav_graph,
+        localization,
+    }
+}
 
 /// The C# database location `<local app data>/Arcana/data/arcana.db` as an sqlx URL, creating
 /// the directory.

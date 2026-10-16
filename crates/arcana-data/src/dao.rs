@@ -8,8 +8,9 @@ use arcana_domain::{Customer, Order, OrderItem, OrderStatus, Product, ProductCat
 use async_trait::async_trait;
 
 use crate::db::Db;
-use crate::repository::generic::{limit_offset, order_by, to_u64};
-use crate::row::{SqlValue, TableEntity, ToSql, fetch, fetch_one, scalar_i64};
+use crate::row::{
+    SqlValue, TableEntity, ToSql, fetch, fetch_one, limit_offset, order_by, scalar_i64, to_u64,
+};
 
 fn select<T: TableEntity>(where_and_rest: &str) -> String {
     format!(

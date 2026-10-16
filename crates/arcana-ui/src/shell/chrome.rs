@@ -79,7 +79,7 @@ impl Shell {
         self.pump();
         self.pump_plugins();
         self.sync_contributions();
-        for cmd in CommandRegistry::take_shortcuts(&ctx) {
+        for cmd in super::shortcuts::take_shortcuts(&ctx) {
             self.execute(cmd);
         }
         if self.exit_requested {
@@ -94,9 +94,9 @@ impl Shell {
         }
 
         let palette = self.palette(&ctx);
-        let l10n = self.svc.localization.clone();
+        let strings = self.svc.localization.clone();
         let cx = ViewCx {
-            l10n: l10n.as_ref(),
+            l10n: l10n::Strings::new(strings.as_ref()),
             palette,
         };
 
@@ -490,7 +490,7 @@ impl Shell {
         let (title, body, ok) = match &d {
             Dialog::Delete { label, .. } => (
                 cx.t("common.delete"),
-                l10n::t_with(cx.l10n, "ui.confirmDelete", std::slice::from_ref(label)),
+                cx.tw("ui.confirmDelete", std::slice::from_ref(label)),
                 cx.t("common.delete"),
             ),
             Dialog::Discard { .. } | Dialog::CloseDirty { .. } => (
@@ -503,11 +503,7 @@ impl Shell {
             }
             Dialog::About => (
                 cx.t("menu.help.about"),
-                l10n::t_with(
-                    cx.l10n,
-                    "app.about.content",
-                    &[env!("CARGO_PKG_VERSION").to_owned()],
-                ),
+                cx.tw("app.about.content", &[env!("CARGO_PKG_VERSION").to_owned()]),
                 cx.t("common.ok"),
             ),
         };
@@ -552,8 +548,7 @@ impl Shell {
                         .inner_margin(10)
                         .show(ui, |ui| {
                             ui.label(
-                                RichText::new(l10n::text(cx.l10n, &t.notice.text))
-                                    .color(Color32::WHITE),
+                                RichText::new(cx.l10n.text(&t.notice.text)).color(Color32::WHITE),
                             );
                         });
                     ui.add_space(4.0);

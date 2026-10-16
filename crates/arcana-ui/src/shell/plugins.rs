@@ -5,12 +5,11 @@ use arcana_plugin_api::{
     MenuItemDefinition, MenuLocation, MessageLevel, WindowRequest, WindowService as _,
 };
 use arcana_plugin_flowchart::plugin::EditorArgs;
-use arcana_plugin_host::services::nav::NavRequest as PluginNav;
 
 use super::Shell;
 use crate::commands::{CommandId, CommandRegistry};
 use crate::effect::{Notice, NoticeLevel, Text};
-use crate::nav::{FlowMode, NavRequest, Route, routes};
+use crate::nav::{FlowMode, NavRequest, PluginNavRequest as PluginNav, Route, routes};
 
 /// A main-menu entry with its children, sorted by `order` (C# `MenuRegistry` tree).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -264,13 +263,9 @@ impl Shell {
     /// Apply navigation, shell commands and window requests plugins queued.
     pub fn pump_plugins(&mut self) {
         let rt = self.svc.plugins.clone();
-        for req in rt.nav.drain() {
+        for req in rt.nav.drain().into_iter().map(PluginNav::from) {
             match req {
-                PluginNav::To {
-                    route_id,
-                    parameter,
-                }
-                | PluginNav::NewTab {
+                PluginNav::Open {
                     route_id,
                     parameter,
                 } => {
@@ -286,7 +281,6 @@ impl Shell {
                 PluginNav::WithinTab {
                     route_id,
                     parameter,
-                    ..
                 } => {
                     if let Some(route) = route_for(&route_id, parameter.as_ref()) {
                         self.navigate(&NavRequest::within_tab(route), None);

@@ -13,7 +13,11 @@ use std::time::{Duration, Instant};
 use tokio::runtime::Handle;
 
 use crate::pages::PageMsg;
-use crate::shell::TabId;
+
+/// Stable identity of a document tab — the address a task result is delivered to. Owned here
+/// (not by the shell view) so the runtime does not depend on the view layer.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct TabId(pub u64);
 
 /// A finished task's result addressed to the tab that asked for it.
 pub type Envelope = (TabId, PageMsg);
