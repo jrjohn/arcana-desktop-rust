@@ -4,9 +4,7 @@
 use arcana_plugin_api::MenuLocation;
 
 use super::Shell;
-use crate::commands::{CommandId, CommandRegistry};
-use crate::effect::{Notice, NoticeLevel, Text};
-use crate::plugin_bridge::{self, ShellAction};
+use crate::plugin_bridge::{self, CommandOutcome, ShellAction};
 use crate::shell_vm::ShellInput;
 
 pub use crate::plugin_menu::{
@@ -19,14 +17,7 @@ impl Shell {
     #[must_use]
     pub fn contributed(&self, location: MenuLocation, module: Option<&str>) -> Vec<Contribution> {
         contributions(
-            &self
-                .vm
-                .services()
-                .plugins
-                .host
-                .services
-                .menus
-                .all_menu_items(),
+            &plugin_bridge::menu_items(&self.vm.services().plugins),
             location,
             module,
         )
@@ -34,7 +25,7 @@ impl Shell {
 
     /// Push the contributed quick actions to Home pages when the menu registry changed.
     pub(super) fn sync_contributions(&mut self) {
-        let rev = self.vm.services().plugins.host.services.menus.revision();
+        let rev = plugin_bridge::menu_revision(&self.vm.services().plugins);
         if self.contrib_rev == Some(rev) {
             return;
         }
@@ -80,64 +71,27 @@ impl Shell {
     /// The plugin-contributed main menu.
     #[must_use]
     pub fn plugin_menu(&self) -> Vec<MenuNode> {
-        menu_tree(
-            &self
-                .vm
-                .services()
-                .plugins
-                .host
-                .services
-                .menus
-                .all_menu_items(),
-        )
+        menu_tree(&plugin_bridge::menu_items(&self.vm.services().plugins))
     }
 
     /// Whether a plugin menu command is currently enabled (shell commands follow
     /// [`Shell::is_enabled`]; plugin-only commands are enabled when registered).
     #[must_use]
     pub fn plugin_command_enabled(&self, name: &str) -> bool {
-        match CommandRegistry::by_name(name) {
-            Some(cmd)
-                if !self
-                    .vm
-                    .services()
-                    .plugins
-                    .host
-                    .services
-                    .commands
-                    .has_command(name) =>
-            {
-                self.is_enabled(cmd)
-            }
-            Some(cmd @ (CommandId::Undo | CommandId::Redo | CommandId::Save)) => {
-                self.is_enabled(cmd)
-            }
-            _ => self
-                .vm
-                .services()
-                .plugins
-                .host
-                .services
-                .commands
-                .has_command(name),
-        }
+        plugin_bridge::command_enabled(&self.vm.services().plugins, name, |cmd| {
+            self.is_enabled(cmd)
+        })
     }
 
     /// Run a command from a plugin menu (C# `CommandService.ExecuteAsync`), then apply
     /// whatever it queued.
     pub fn run_plugin_command(&mut self, name: &str) {
-        let commands = self.vm.services().plugins.host.services.commands.clone();
-        if commands.has_command(name) {
-            if let Err(e) = commands.execute(name, Vec::new()) {
-                self.dispatch(ShellInput::Notify(Notice::error(e.to_user_message())));
+        match plugin_bridge::run_command(&self.vm.services().plugins, name) {
+            CommandOutcome::Plugin(None) => {}
+            CommandOutcome::Plugin(Some(n)) | CommandOutcome::Developing(n) => {
+                self.dispatch(ShellInput::Notify(n));
             }
-        } else if let Some(cmd) = CommandRegistry::by_name(name) {
-            self.execute(cmd);
-        } else {
-            self.dispatch(ShellInput::Notify(Notice::new(
-                NoticeLevel::Info,
-                Text::Key("common.developing"),
-            )));
+            CommandOutcome::Shell(cmd) => self.execute(cmd),
         }
         self.pump_plugins();
     }

@@ -2,6 +2,7 @@
 //! (C# `Arcana.Data.Dao` + `Dao.Impl`).
 
 use std::fmt::Write as _;
+use std::sync::Arc;
 
 use arcana_core::{AppError, AppResult, ErrorCode, PageRequest, PagedResult, Timestamp, today};
 use arcana_domain::{Customer, Order, OrderItem, OrderStatus, Product, ProductCategory};
@@ -330,4 +331,22 @@ impl OrderDao for OrderDaoImpl {
             to_u64(total),
         ))
     }
+}
+
+/// Default [`CustomerDao`] on `db` (factory: callers depend on the trait, not the impl).
+#[must_use]
+pub fn customer_dao(db: Db) -> Arc<dyn CustomerDao> {
+    Arc::new(CustomerDaoImpl::new(db))
+}
+
+/// Default [`ProductDao`] on `db`.
+#[must_use]
+pub fn product_dao(db: Db) -> Arc<dyn ProductDao> {
+    Arc::new(ProductDaoImpl::new(db))
+}
+
+/// Default [`OrderDao`] on `db`.
+#[must_use]
+pub fn order_dao(db: Db) -> Arc<dyn OrderDao> {
+    Arc::new(OrderDaoImpl::new(db))
 }

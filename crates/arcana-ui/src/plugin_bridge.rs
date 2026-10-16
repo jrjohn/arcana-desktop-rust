@@ -137,6 +137,65 @@ pub fn drain(rt: &PluginRuntime) -> Vec<ShellAction> {
     out
 }
 
+/// All plugin-contributed menu items currently registered.
+#[must_use]
+pub fn menu_items(rt: &PluginRuntime) -> Vec<arcana_plugin_api::MenuItemDefinition> {
+    rt.host.services.menus.all_menu_items()
+}
+
+/// Revision of the plugin menu registry (changes when contributions change).
+#[must_use]
+pub fn menu_revision(rt: &PluginRuntime) -> u64 {
+    rt.host.services.menus.revision()
+}
+
+/// Whether a plugin menu command is enabled. Shell commands not overridden by a plugin follow
+/// `shell_enabled`, as do Undo/Redo/Save; plugin-only commands are enabled when registered.
+#[must_use]
+pub fn command_enabled(
+    rt: &PluginRuntime,
+    name: &str,
+    shell_enabled: impl Fn(CommandId) -> bool,
+) -> bool {
+    let has = rt.host.services.commands.has_command(name);
+    match CommandRegistry::by_name(name) {
+        Some(cmd) if !has => shell_enabled(cmd),
+        Some(cmd @ (CommandId::Undo | CommandId::Redo | CommandId::Save)) => shell_enabled(cmd),
+        _ => has,
+    }
+}
+
+/// What running a plugin menu command resolved to.
+pub enum CommandOutcome {
+    /// A plugin command ran (`Some` notice when it failed).
+    Plugin(Option<Notice>),
+    /// A built-in shell command the shell must execute.
+    Shell(CommandId),
+    /// Nothing handles it yet.
+    Developing(Notice),
+}
+
+/// Run `name` through the plugin command service, or say which shell command it maps to.
+#[must_use]
+pub fn run_command(rt: &PluginRuntime, name: &str) -> CommandOutcome {
+    let commands = &rt.host.services.commands;
+    if commands.has_command(name) {
+        CommandOutcome::Plugin(
+            commands
+                .execute(name, Vec::new())
+                .err()
+                .map(|e| Notice::error(e.to_user_message())),
+        )
+    } else if let Some(cmd) = CommandRegistry::by_name(name) {
+        CommandOutcome::Shell(cmd)
+    } else {
+        CommandOutcome::Developing(Notice::new(
+            NoticeLevel::Info,
+            Text::Key("common.developing"),
+        ))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

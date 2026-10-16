@@ -18,7 +18,8 @@ use uuid::Uuid;
 
 use crate::db::{Db, exec_raw};
 use crate::repository::{
-    CustomerRepositoryImpl, OrderRepositoryImpl, ProductRepositoryImpl, SqliteRepository,
+    CustomerRepository, OrderRepository, ProductRepository, SqliteRepository, customer_repository,
+    order_repository, product_repository,
 };
 use crate::row::TableEntity;
 
@@ -53,20 +54,20 @@ impl SqliteUnitOfWork {
 
     /// The specialised customer repository (C# DI-resolved `GetRepository<Customer>()`).
     #[must_use]
-    pub fn customers(&self) -> CustomerRepositoryImpl {
-        CustomerRepositoryImpl::with_db(self.db.clone())
+    pub fn customers(&self) -> impl CustomerRepository + Clone {
+        customer_repository(self.db.clone())
     }
 
     /// The specialised product repository.
     #[must_use]
-    pub fn products(&self) -> ProductRepositoryImpl {
-        ProductRepositoryImpl::with_db(self.db.clone())
+    pub fn products(&self) -> impl ProductRepository + Clone {
+        product_repository(self.db.clone())
     }
 
     /// The specialised order repository.
     #[must_use]
-    pub fn orders(&self) -> OrderRepositoryImpl {
-        OrderRepositoryImpl::with_db(self.db.clone())
+    pub fn orders(&self) -> impl OrderRepository + Clone {
+        order_repository(self.db.clone())
     }
 
     async fn begin(&mut self) -> AppResult<()> {
