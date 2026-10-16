@@ -93,10 +93,10 @@ pipeline {
                         stage('Architecture Qube') {
                             // Blocking, threshold 90 — same recipe as arcana-cloud-rust: copy the source IN via a
                             // tar stream (a -v bind of $WORKSPACE would resolve on the host and scan an empty
-                            // tree) and the report OUT with docker cp. AQ_FRAMEWORK moves to rust-desktop once
-                            // arch-qube ships that profile: the backend `rust` profile has no view/viewmodel
-                            // layer, so its UI rules pass vacuously here (arcana-ui is never classified).
-                            environment { AQ_FRAMEWORK = 'rust' }
+                            // tree) and the report OUT with docker cp. `rust-desktop` (arch-qube >= 0.5.0) classifies the
+                            // view / view-model / plugin layers too; the backend `rust` profile left arcana-ui
+                            // unclassified, so its UI rules passed vacuously.
+                            environment { AQ_FRAMEWORK = 'rust-desktop' }
                             steps {
                                 sh '''
                                     AQ="arcana-arch-qube-desktop-${BUILD_NUMBER}"
