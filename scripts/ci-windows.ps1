@@ -18,12 +18,18 @@ if (-not (Get-Command cargo -ErrorAction SilentlyContinue)) {
     Invoke-WebRequest -Uri 'https://win.rustup.rs/x86_64' -OutFile $init
     Run $init @('-y', '--profile', 'minimal', '--default-toolchain', 'stable', '--no-modify-path')
 }
+# Pinned, not `stable`: `rustup toolchain install stable` silently upgraded the toolchain under
+# running builds, and 2026-10-19 PR-17/18/19 failed only here with corrupt-artifact errors
+# ("can't find crate for `std`", "only metadata stub found"). Bump deliberately.
+$rustVersion = '1.99.0'
+# The agent is a 4-core / 7.7 GB laptop (0.6 GB free observed mid-build): cap rustc parallelism.
+$env:CARGO_BUILD_JOBS = '2'
 $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
 $hasMsvc = (Test-Path $vswhere) -and (& $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath)
 if ($hasMsvc) {
-    $toolchain = 'stable-x86_64-pc-windows-msvc'
+    $toolchain = "$rustVersion-x86_64-pc-windows-msvc"
 } else {
-    $toolchain = 'stable-x86_64-pc-windows-gnu'
+    $toolchain = "$rustVersion-x86_64-pc-windows-gnu"
     $mingwRoot = Join-Path $env:USERPROFILE '.arcana-ci'
     $gcc = Join-Path $mingwRoot 'mingw64\bin\gcc.exe'
     if (-not (Test-Path $gcc)) {

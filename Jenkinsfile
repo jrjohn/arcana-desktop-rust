@@ -19,8 +19,11 @@ pipeline {
                     agent { label 'built-in' }
                     options { lock('ci-rust-build') }
                     environment {
-                        IMG = "arcana-desktop-rust-ci:build-${env.BUILD_NUMBER}"
-                        GUI_IMG = "arcana-desktop-rust-gui:build-${env.BUILD_NUMBER}"
+                        // Branch + build number: build numbers restart per branch, so "build-14" alone let
+                        // PR-17 #14 and main #14 share (and delete) one image/container name.
+                        CI_ID = "${env.BRANCH_NAME.toLowerCase().replaceAll('[^a-z0-9_.-]', '-')}-${env.BUILD_NUMBER}"
+                        IMG = "arcana-desktop-rust-ci:${CI_ID}"
+                        GUI_IMG = "arcana-desktop-rust-gui:${CI_ID}"
                     }
                     stages {
                         stage('Check') {
@@ -28,7 +31,7 @@ pipeline {
                                 sh '''
                                     set -e
                                     docker build -f Dockerfile.ci --target ci -t "$IMG" .
-                                    C="desktop-ci-$BUILD_NUMBER"
+                                    C="desktop-ci-$CI_ID"
                                     docker rm -f "$C" >/dev/null 2>&1 || true
                                     set +e; docker run --name "$C" "$IMG"; RC=$?; set -e
                                     docker cp "$C":/app/clippy-report.json . 2>/dev/null || true
@@ -43,7 +46,7 @@ pipeline {
                                 sh '''
                                     set -e
                                     docker build -f Dockerfile.ci --target gui -t "$GUI_IMG" .
-                                    C="desktop-gui-$BUILD_NUMBER"
+                                    C="desktop-gui-$CI_ID"
                                     docker rm -f "$C" >/dev/null 2>&1 || true
                                     rm -rf smoke-out
                                     set +e; docker run --name "$C" "$GUI_IMG"; RC=$?; set -e
@@ -99,7 +102,7 @@ pipeline {
                             environment { AQ_FRAMEWORK = 'rust-desktop' }
                             steps {
                                 sh '''
-                                    AQ="arcana-arch-qube-desktop-${BUILD_NUMBER}"
+                                    AQ="arcana-arch-qube-desktop-${CI_ID}"
                                     docker rm -f "$AQ" 2>/dev/null || true
                                     docker create --name "$AQ" --network devops_default -v /src -v /output \
                                         arcana.boo/arcana/arch-qube:latest \
@@ -119,7 +122,9 @@ pipeline {
                             post { always { archiveArtifacts artifacts: 'arch-qube-reports/*', allowEmptyArchive: true } }
                         }
                     }
-                    post { always { sh 'docker rmi "$IMG" "$GUI_IMG" >/dev/null 2>&1 || true' } }
+                    // always = also on abort/failure. The in-step `docker rm -f` never runs when a build is
+                    // stopped mid-step, which leaked 4 containers (~48 GB) and filled /data on 2026-10-19.
+                    post { always { sh 'docker rm -f "desktop-ci-$CI_ID" "desktop-gui-$CI_ID" >/dev/null 2>&1 || true; docker rmi "$IMG" "$GUI_IMG" >/dev/null 2>&1 || true' } }
                 }
                 stage('Windows') {
                     agent { label 'windows' }
