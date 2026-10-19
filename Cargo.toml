@@ -36,7 +36,7 @@ egui_kittest = "0.36"
 pbkdf2 = { version = "0.12", default-features = false, features = ["hmac"] }
 hmac = "0.12"
 sha2 = "0.10"
-base64 = "0.22"
+base64 = "0.23"
 getrandom = "0.2"
 subtle = "2"
 tracing = "0.1"
