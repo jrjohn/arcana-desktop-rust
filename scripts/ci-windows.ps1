@@ -68,6 +68,13 @@ $env:CARGO_INCREMENTAL = '0'
 Run cargo @('build', '--release', '--target', 'wasm32-unknown-unknown', '--manifest-path', 'plugins-wasm/example/Cargo.toml', '--target-dir', 'target/wasm-example')
 New-Item -ItemType Directory -Force -Path 'target/wasm' | Out-Null
 Run wasm-tools @('component', 'new', 'target/wasm-example/wasm32-unknown-unknown/release/arcana_wasm_example.wasm', '-o', 'target/wasm/example.wasm')
+# One shared cargo target for every branch/PR workspace. Each Jenkins workspace kept its own
+# ~17.6 GB target/ once per-run `cargo clean` was dropped, and 20+ of them filled C: (0.4 GB free,
+# "ld.exe: final link failed: No space left on device", 2026-10-19). Safe to share: the agent runs
+# one build at a time (numExecutors 1). The small wasm example stays in the workspace's target/
+# because the sandbox tests load it from there (explicit --target-dir above).
+$env:CARGO_TARGET_DIR = 'C:\jenkins-agent\cargo-target\arcana-desktop-rust'
+New-Item -ItemType Directory -Force -Path $env:CARGO_TARGET_DIR | Out-Null
 Run cargo @('test', '--workspace', '--locked')
 Run cargo @('build', '--release', '--locked', '-p', 'arcana-app')
-Get-Item 'target/release/arcana-app.exe' | Format-List Name, Length
+Get-Item (Join-Path $env:CARGO_TARGET_DIR 'release\arcana-app.exe') | Format-List Name, Length
