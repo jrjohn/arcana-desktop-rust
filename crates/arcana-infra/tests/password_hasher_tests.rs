@@ -13,11 +13,9 @@ fn h() -> PasswordHasherImpl {
 // HashPassword_ValidPassword_ShouldReturnNonEmptyHash
 #[test]
 fn hash_password_valid_password_should_return_non_empty_hash() {
-    assert!(
-        !h().hash_password("MySecureP@ssw0rd")
-            .unwrap()
-            .trim()
-            .is_empty()
+    assert_ne!(
+        h().hash_password("MySecureP@ssw0rd").unwrap().trim().len(),
+        0
     );
 }
 

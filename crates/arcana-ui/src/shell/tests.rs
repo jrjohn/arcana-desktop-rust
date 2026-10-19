@@ -104,7 +104,7 @@ fn open_order_list_then_detail_in_new_tab_edit_and_save() {
     assert_ne!(detail, list);
     let d = order_detail_state(&mut f.shell, detail);
     assert_eq!(d.order.base.id, id);
-    assert!(!d.order.items.is_empty());
+    assert_ne!(d.order.items.len(), 0);
     let before = d.order.total_amount;
 
     f.shell
@@ -265,7 +265,7 @@ fn pop_out_dock_back_reorder_and_within_tab_navigation() {
     f.shell.execute(CommandId::Settings);
     assert_eq!(f.shell.floating(), &[settings_tab]);
     f.shell.dock_back(settings_tab);
-    assert!(f.shell.floating().is_empty());
+    assert_eq!(f.shell.floating().len(), 0);
     assert_eq!(f.shell.docked_order().len(), 3);
 
     f.shell
@@ -534,7 +534,7 @@ fn plugin_confirm_waits_for_the_answer_and_replies_through_the_command() {
     rt.window.show_confirm("T2", "second?", Some("test.reply"));
     f.shell.pump_plugins();
     assert!(matches!(f.shell.dialog(), Some(Dialog::PluginConfirm { title, .. }) if title == "T1"));
-    assert!(answers.lock().unwrap().is_empty(), "nothing answered yet");
+    assert_eq!(answers.lock().unwrap().len(), 0, "nothing answered yet");
     f.shell.answer_dialog(true);
     assert!(matches!(f.shell.dialog(), Some(Dialog::PluginConfirm { title, .. }) if title == "T2"));
     f.shell.answer_dialog(false);

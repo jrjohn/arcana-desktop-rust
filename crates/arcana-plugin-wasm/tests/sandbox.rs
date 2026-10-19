@@ -55,7 +55,7 @@ fn example_loads_with_metadata_and_activates() {
 fn log_is_dropped_without_grant() {
     let mut p = plain();
     p.activate().unwrap();
-    assert!(p.logs().is_empty());
+    assert_eq!(p.logs().len(), 0);
 }
 
 #[test]

@@ -146,7 +146,7 @@ fn dependency_resolver_should_detect_version_conflicts() {
     r.register("plugin-b", sv("1.0.0"), vec![dep("core@^2.0.0")]);
     let res = r.resolve();
     assert!(!res.success);
-    assert!(!res.conflicts.is_empty());
+    assert_ne!(res.conflicts.len(), 0);
 }
 
 struct P(String);
@@ -330,7 +330,7 @@ async fn complete_plugin_lifecycle_install_activate_deactivate_uninstall() {
     assert_eq!(ok(h.store.health_snapshot_count(id).await), 1);
     assert!(h.deactivate(id).is_ok());
     assert!(h.uninstall(id).await.success);
-    assert!(ok(h.store.versions(id).await).is_empty());
+    assert_eq!(ok(h.store.versions(id).await).len(), 0);
     h.permissions.set_permissions(id, PluginPermission::NONE);
     assert_eq!(h.permissions.permissions(id), PluginPermission::NONE);
 }

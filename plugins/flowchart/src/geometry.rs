@@ -446,7 +446,7 @@ mod tests {
             };
             let pts = outline(&n);
             let tris = triangulate(&pts);
-            assert!(!tris.is_empty(), "{shape:?}");
+            assert_ne!(tris.len(), 0, "{shape:?}");
             let sum: f64 = tris.iter().map(|t| tri_area(&pts, *t)).sum();
             let mut poly = pts.clone();
             if poly.len() > 1 && poly[0] == poly[poly.len() - 1] {
@@ -472,7 +472,7 @@ mod tests {
         let mut rev = sq;
         rev.reverse();
         assert_eq!(triangulate(&rev).len(), 2);
-        assert!(triangulate(&sq[..2]).is_empty());
+        assert_eq!(triangulate(&sq[..2]).len(), 0);
         // L-shape: the reflex corner must not get an ear across it.
         let l = [
             Point::new(0.0, 0.0),

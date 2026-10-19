@@ -19,7 +19,7 @@ fn hash(c: &VectorClock) -> u64 {
 // Constructor_Default_ShouldCreateEmptyClock
 #[test]
 fn constructor_default_should_create_empty_clock() {
-    assert!(VectorClock::new().entries().is_empty());
+    assert_eq!(VectorClock::new().entries().len(), 0);
 }
 
 // Constructor_WithDictionary_ShouldCopyValues
@@ -72,7 +72,7 @@ fn increment_should_return_new_instance() {
     let c = VectorClock::new();
     let n = c.increment("node1");
     assert_ne!(c, n);
-    assert!(c.entries().is_empty());
+    assert_eq!(c.entries().len(), 0);
 }
 
 // GetValue_ExistingNode_ShouldReturnValue
@@ -90,11 +90,12 @@ fn get_value_non_existing_node_should_return_zero() {
 // Merge_EmptyClocks_ShouldReturnEmptyClock
 #[test]
 fn merge_empty_clocks_should_return_empty_clock() {
-    assert!(
+    assert_eq!(
         VectorClock::new()
             .merge(&VectorClock::new())
             .entries()
-            .is_empty()
+            .len(),
+        0
     );
 }
 
@@ -298,13 +299,8 @@ fn deserialize_valid_json_should_reconstruct_clock() {
 // Deserialize_EmptyObject_ShouldReturnEmptyClock
 #[test]
 fn deserialize_empty_object_should_return_empty_clock() {
-    assert!(VectorClock::deserialize("{}").unwrap().entries().is_empty());
-    assert!(
-        VectorClock::deserialize("null")
-            .unwrap()
-            .entries()
-            .is_empty()
-    );
+    assert_eq!(VectorClock::deserialize("{}").unwrap().entries().len(), 0);
+    assert_eq!(VectorClock::deserialize("null").unwrap().entries().len(), 0);
     assert_eq!(
         VectorClock::deserialize("[1]").unwrap_err().code(),
         arcana_core::ErrorCode::DataCorruption

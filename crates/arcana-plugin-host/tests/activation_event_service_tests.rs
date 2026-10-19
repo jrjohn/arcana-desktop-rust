@@ -114,7 +114,7 @@ fn fire_wrong_command() {
     let (s, log) = recording();
     s.register_pending_plugin("plugin-cmd", &ev(&ae::for_command("order.new")));
     s.fire_type(ActivationEventType::OnCommand, Some("customer.edit"));
-    assert!(got(&log).is_empty());
+    assert_eq!(got(&log).len(), 0);
 }
 
 // FireAsync_WildcardPlugin_ShouldActivateOnAnyEvent
@@ -141,7 +141,7 @@ fn fire_twice_activates_once() {
 fn fire_without_callback() {
     let s = ActivationEventService::new();
     s.register_pending_plugin("plugin-a", &ev(ae::ON_STARTUP));
-    assert!(s.fire_type(ActivationEventType::OnStartup, None).is_empty());
+    assert_eq!(s.fire_type(ActivationEventType::OnStartup, None).len(), 0);
 }
 
 // FireAsync_RaisesPluginActivatedEvent
@@ -173,7 +173,7 @@ fn fire_callback_error_is_swallowed() {
             "activation failed",
         ))
     }));
-    assert!(s.fire_type(ActivationEventType::OnStartup, None).is_empty());
+    assert_eq!(s.fire_type(ActivationEventType::OnStartup, None).len(), 0);
     // Still pending: a failed activation is not marked (C# only marks on success).
     assert!(s.is_pending_activation("plugin-err"));
 }
@@ -223,9 +223,10 @@ fn plugins_for_event_excludes_activated() {
     let s = ActivationEventService::new();
     s.register_pending_plugin("plugin-a", &ev(ae::ON_STARTUP));
     s.mark_activated("plugin-a");
-    assert!(
+    assert_eq!(
         s.plugins_for_event(ActivationEventType::OnStartup, None)
-            .is_empty()
+            .len(),
+        0
     );
 }
 
@@ -246,5 +247,5 @@ fn fire_unrelated() {
     let (s, log) = recording();
     s.register_pending_plugin("plugin-a", &ev(ae::ON_STARTUP));
     s.fire_type(ActivationEventType::OnCommand, Some("unrelated.command"));
-    assert!(got(&log).is_empty());
+    assert_eq!(got(&log).len(), 0);
 }

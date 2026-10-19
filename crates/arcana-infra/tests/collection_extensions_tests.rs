@@ -107,7 +107,7 @@ fn add_range_works_with_hash_set() {
 #[test]
 fn or_empty_null_source_should_return_empty() {
     let source: Option<Vec<i32>> = black_box(None);
-    assert!(source.unwrap_or_default().is_empty());
+    assert_eq!(source.unwrap_or_default().len(), 0);
 }
 
 // OrEmpty_NonNullSource_ShouldReturnSame
@@ -122,10 +122,11 @@ fn or_empty_non_null_source_should_return_same() {
 // OrEmpty_EmptySource_ShouldReturnEmpty
 #[test]
 fn or_empty_empty_source_should_return_empty() {
-    assert!(
+    assert_eq!(
         black_box(Some(Vec::<String>::new()))
             .unwrap_or_default()
-            .is_empty()
+            .len(),
+        0
     );
 }
 

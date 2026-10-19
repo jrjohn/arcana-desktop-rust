@@ -107,14 +107,14 @@ fn loaded_page_updates_counts_and_paging_flags() {
 fn paging_moves_within_bounds_only() {
     let (mut vm, _) = ViewModel::new();
     loaded(&mut vm, sample(), 45);
-    assert!(vm.on(Input::PreviousPage).is_empty());
+    assert_eq!(vm.on(Input::PreviousPage).len(), 0);
     assert_eq!(query_of(&vm.on(Input::NextPage)).page, 2);
     loaded(&mut vm, sample(), 45);
     assert_eq!(query_of(&vm.on(Input::GoToPage(3))).page, 3);
     loaded(&mut vm, sample(), 45);
-    assert!(vm.on(Input::NextPage).is_empty());
-    assert!(vm.on(Input::GoToPage(9)).is_empty());
-    assert!(vm.on(Input::GoToPage(0)).is_empty());
+    assert_eq!(vm.on(Input::NextPage).len(), 0);
+    assert_eq!(vm.on(Input::GoToPage(9)).len(), 0);
+    assert_eq!(vm.on(Input::GoToPage(0)).len(), 0);
     assert_eq!(query_of(&vm.on(Input::PreviousPage)).page, 2);
     assert_eq!(vm.state.showing_range().0, 21, "page 2 starts at row 21");
 }
@@ -125,9 +125,9 @@ fn search_and_filters_reset_to_first_page() {
     loaded(&mut vm, sample(), 45);
     let _ = vm.on(Input::NextPage);
     loaded(&mut vm, sample(), 45);
-    assert!(
-        vm.on(Input::SearchTextChanged(" kaohsiung ".into()))
-            .is_empty()
+    assert_eq!(
+        vm.on(Input::SearchTextChanged(" kaohsiung ".into())).len(),
+        0
     );
     let q = query_of(&vm.on(Input::Search));
     assert_eq!((q.page, q.search.as_str()), (1, "kaohsiung"));
@@ -172,11 +172,11 @@ fn sort_toggles_direction_on_same_column() {
 #[test]
 fn no_double_load_while_busy_and_errors_notify() {
     let (mut vm, _) = ViewModel::new();
-    assert!(vm.on(Input::Refresh).is_empty());
+    assert_eq!(vm.on(Input::Refresh).len(), 0);
     let fx = vm.on(Input::Loaded(Err("db down".into())));
     assert_eq!(fx, vec![Effect::Notify(Notice::error("db down"))]);
     assert_eq!(vm.state.error.as_deref(), Some("db down"));
-    assert!(!vm.on(Input::Refresh).is_empty());
+    assert_ne!(vm.on(Input::Refresh).len(), 0);
 }
 
 #[test]
@@ -213,7 +213,7 @@ fn navigation_actions_match_csharp() {
 fn delete_confirms_then_runs_then_removes_row() {
     let (mut vm, _) = ViewModel::new();
     loaded(&mut vm, sample(), 4);
-    assert!(vm.on(Input::DeleteOrder(99)).is_empty());
+    assert_eq!(vm.on(Input::DeleteOrder(99)).len(), 0);
     assert_eq!(
         vm.on(Input::DeleteOrder(2)),
         vec![Effect::ConfirmDelete {
@@ -228,7 +228,7 @@ fn delete_confirms_then_runs_then_removes_row() {
             order_number: "ORD-0002".into()
         })]
     );
-    assert!(vm.on(Input::DeleteConfirmed(99)).is_empty());
+    assert_eq!(vm.on(Input::DeleteConfirmed(99)).len(), 0);
     let fx = vm.on(Input::Deleted(Ok("ORD-0002".into())));
     assert!(fx.contains(&Effect::DataChanged(DataKind::Orders)));
     assert_eq!(vm.state.orders.len(), 3);
@@ -250,7 +250,7 @@ fn change_status_advances_and_reloads() {
             status: OrderStatus::Confirmed
         })]
     );
-    assert!(vm.on(Input::ChangeStatus(42)).is_empty());
+    assert_eq!(vm.on(Input::ChangeStatus(42)).len(), 0);
     let fx = vm.on(Input::StatusChanged(Ok(())));
     assert!(matches!(fx[0], Effect::Run(Task::Query(_))));
     assert!(fx.contains(&Effect::DataChanged(DataKind::Orders)));
@@ -344,9 +344,9 @@ fn query_apply_filters_sorts_and_pages() {
             ..base.clone()
         };
         assert_eq!(q.apply(sample()).items[0].base.id, first, "{col:?}");
-        assert!(!col.column().is_empty());
+        assert_ne!(col.column().len(), 0);
     }
-    assert!(!q_unfiltered_page(&base).sort_by.unwrap().is_empty());
+    assert_ne!(q_unfiltered_page(&base).sort_by.unwrap().len(), 0);
 }
 
 fn q_unfiltered_page(q: &OrderQuery) -> arcana_core::PageRequest {

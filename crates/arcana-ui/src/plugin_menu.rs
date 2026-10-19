@@ -201,9 +201,12 @@ mod tests {
             contributions(&all, MenuLocation::ModuleQuickAccess, Some("OrderModule")).len(),
             1
         );
-        assert!(contributions(&all, MenuLocation::ModuleQuickAccess, Some("X")).is_empty());
+        assert_eq!(
+            contributions(&all, MenuLocation::ModuleQuickAccess, Some("X")).len(),
+            0
+        );
         assert_eq!(function_tree(&all, &[]).len(), 1);
-        assert!(function_tree(&all, &["t"]).is_empty());
+        assert_eq!(function_tree(&all, &["t"]).len(), 0);
         assert_eq!(icon_glyph(Some("\u{E8FD}")), "🔀");
         assert_eq!(icon_glyph(None), "•");
         assert_eq!(module_of(&Route::OrderList), Some("OrderModule"));

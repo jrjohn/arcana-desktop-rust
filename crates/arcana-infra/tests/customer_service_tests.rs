@@ -223,7 +223,7 @@ async fn update_customer_duplicate_code_should_return_failure() {
 async fn delete_customer_existing_customer_should_return_success() {
     let repo = Fake::with(vec![c1()]);
     svc(&repo).delete_customer(1).await.unwrap();
-    assert!(repo.items.lock().unwrap().is_empty());
+    assert_eq!(repo.items.lock().unwrap().len(), 0);
 }
 
 // DeleteCustomerAsync_NotFound_ShouldReturnFailure

@@ -55,10 +55,10 @@ fn loads_pages_and_searches() {
             search: String::new()
         })]
     );
-    assert!(vm.on(Input::Refresh).is_empty(), "busy");
+    assert_eq!(vm.on(Input::Refresh).len(), 0, "busy");
     loaded(&mut vm, 41);
     assert_eq!(vm.state.total_pages, 3);
-    assert!(vm.on(Input::PreviousPage).is_empty());
+    assert_eq!(vm.on(Input::PreviousPage).len(), 0);
     assert_eq!(
         vm.on(Input::NextPage),
         vec![Effect::Run(Task::Load {
@@ -78,7 +78,7 @@ fn loads_pages_and_searches() {
         })]
     );
     loaded(&mut vm, 1);
-    assert!(vm.on(Input::NextPage).is_empty());
+    assert_eq!(vm.on(Input::NextPage).len(), 0);
     let _ = vm.on(Input::Refresh);
     let fx = vm.on(Input::Loaded(Err("e".into())));
     assert_eq!(fx, vec![Effect::Notify(Notice::error("e"))]);
@@ -109,7 +109,7 @@ fn navigation_and_delete_flow() {
             label: "P002".into()
         }]
     );
-    assert!(vm.on(Input::Delete(9)).is_empty());
+    assert_eq!(vm.on(Input::Delete(9)).len(), 0);
     assert_eq!(
         vm.on(Input::DeleteConfirmed(2)),
         vec![Effect::Run(Task::Delete {
@@ -117,7 +117,7 @@ fn navigation_and_delete_flow() {
             label: "P002".into()
         })]
     );
-    assert!(vm.on(Input::DeleteConfirmed(9)).is_empty());
+    assert_eq!(vm.on(Input::DeleteConfirmed(9)).len(), 0);
     let fx = vm.on(Input::Deleted(Ok("P002".into())));
     assert!(fx.contains(&Effect::DataChanged(DataKind::Products)));
     assert_eq!(vm.state.rows.len(), 1);

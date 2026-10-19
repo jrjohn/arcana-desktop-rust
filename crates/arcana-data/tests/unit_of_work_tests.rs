@@ -168,8 +168,8 @@ async fn unit_hands_out_repositories_on_its_connection() {
     let queue = uow.repository::<SyncQueueItem>();
     queue.add(SyncQueueItem::default()).await.unwrap();
     assert!(uow.customers().get_by_code("x").await.unwrap().is_none());
-    assert!(uow.products().get_categories().await.unwrap().is_empty());
-    assert!(uow.orders().get_by_customer_id(1).await.unwrap().is_empty());
+    assert_eq!(uow.products().get_categories().await.unwrap().len(), 0);
+    assert_eq!(uow.orders().get_by_customer_id(1).await.unwrap().len(), 0);
     assert_eq!(uow.commit().await.unwrap(), 1);
     assert_eq!(queue.count(None).await.unwrap(), 1);
 }

@@ -108,8 +108,9 @@ fn close_pop_out_and_dock_back_drive_the_dock() {
         vec![ShellEffect::DockRemove(tab)]
     );
     assert_eq!(f.vm.floating, vec![tab]);
-    assert!(
-        f.vm.on(ShellInput::PopOut(tab)).is_empty(),
+    assert_eq!(
+        f.vm.on(ShellInput::PopOut(tab)).len(),
+        0,
         "already floating"
     );
     assert_eq!(
@@ -120,8 +121,8 @@ fn close_pop_out_and_dock_back_drive_the_dock() {
         f.vm.on(ShellInput::Close { tab, force: false }),
         vec![ShellEffect::DockRemove(tab)]
     );
-    assert!(f.vm.tabs.is_empty());
-    assert!(f.vm.on(ShellInput::Close { tab, force: false }).is_empty());
+    assert_eq!(f.vm.tabs.len(), 0);
+    assert_eq!(f.vm.on(ShellInput::Close { tab, force: false }).len(), 0);
 }
 
 #[test]
@@ -130,7 +131,7 @@ fn dialog_answers_route_to_their_target() {
     let (tab, _) = open(&mut f.vm, Route::Settings, None);
     // "No" leaves the tab alone.
     f.vm.dialog = Some(Dialog::CloseDirty { tab });
-    assert!(f.vm.on(ShellInput::AnswerDialog(false)).is_empty());
+    assert_eq!(f.vm.on(ShellInput::AnswerDialog(false)).len(), 0);
     assert!(f.vm.dialog.is_none());
     assert!(f.vm.tabs.contains_key(&tab));
     // "Yes" force-closes it.
@@ -139,9 +140,9 @@ fn dialog_answers_route_to_their_target() {
         f.vm.on(ShellInput::AnswerDialog(true)),
         vec![ShellEffect::DockRemove(tab)]
     );
-    assert!(f.vm.tabs.is_empty());
+    assert_eq!(f.vm.tabs.len(), 0);
     // No dialog: nothing happens.
-    assert!(f.vm.on(ShellInput::AnswerDialog(true)).is_empty());
+    assert_eq!(f.vm.on(ShellInput::AnswerDialog(true)).len(), 0);
 }
 
 #[test]
@@ -224,7 +225,7 @@ fn commands_toggle_chrome_and_act_on_the_focused_tab() {
         CommandId::CloseTab,
         CommandId::PopOut,
     ] {
-        assert!(exec(&mut f.vm, cmd, None).is_empty());
+        assert_eq!(exec(&mut f.vm, cmd, None).len(), 0);
     }
     // Navigation commands open documents.
     let fx = exec(&mut f.vm, CommandId::Settings, None);
@@ -238,7 +239,7 @@ fn commands_toggle_chrome_and_act_on_the_focused_tab() {
         vec![ShellEffect::DockRemove(tab)]
     );
     exec(&mut f.vm, CommandId::CloseTab, Some(tab));
-    assert!(f.vm.tabs.is_empty());
+    assert_eq!(f.vm.tabs.len(), 0);
     // Unhandled commands say so.
     exec(&mut f.vm, CommandId::Undo, None);
     assert_eq!(f.vm.toasts.len(), 1);
@@ -254,7 +255,7 @@ fn status_items_are_set_and_removed() {
     f.vm.on(set(Some("busy")));
     assert_eq!(f.vm.status_items.get("p").map(String::as_str), Some("busy"));
     f.vm.on(set(None));
-    assert!(f.vm.status_items.is_empty());
+    assert_eq!(f.vm.status_items.len(), 0);
 }
 
 #[test]

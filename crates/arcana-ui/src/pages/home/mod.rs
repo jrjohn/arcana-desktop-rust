@@ -131,14 +131,14 @@ mod tests {
         let (mut vm, fx) = ViewModel::new();
         assert_eq!(fx, vec![Effect::Run(Task::LoadDashboard)]);
         assert!(vm.state.loading);
-        assert!(vm.on(Input::Load).is_empty(), "no double load while busy");
+        assert_eq!(vm.on(Input::Load).len(), 0, "no double load while busy");
         let d = Dashboard {
             today_orders: 2,
             pending_orders: 1,
             total_customers: 5,
             ..Dashboard::default()
         };
-        assert!(vm.on(Input::Loaded(Ok(d.clone()))).is_empty());
+        assert_eq!(vm.on(Input::Loaded(Ok(d.clone()))).len(), 0);
         assert_eq!(vm.state.dashboard, d);
         assert!(!vm.state.loading);
     }
@@ -159,12 +159,13 @@ mod tests {
             title: c.into(),
             command: c.into(),
         };
-        assert!(
+        assert_eq!(
             vm.on(Input::SetQuickActions(vec![
                 qa("quick.home"),
                 qa("order.new")
             ]))
-            .is_empty()
+            .len(),
+            0
         );
         assert_eq!(vm.state.quick_actions, vec![qa("order.new")]);
         assert_eq!(

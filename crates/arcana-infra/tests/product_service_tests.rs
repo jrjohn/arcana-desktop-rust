@@ -294,7 +294,7 @@ async fn update_product_repository_throws_should_return_failure() {
 async fn delete_product_existing_product_should_return_success() {
     let repo = Fake::with(vec![p1()]);
     svc(&repo).delete_product(1).await.unwrap();
-    assert!(repo.items.lock().unwrap().is_empty());
+    assert_eq!(repo.items.lock().unwrap().len(), 0);
 }
 
 // DeleteProductAsync_NotFound_ShouldReturnFailure

@@ -299,7 +299,7 @@ async fn unloading_all_leaves_nothing_loaded() {
     for id in ["a", "b"] {
         assert!(e.host.unload(id));
     }
-    assert!(e.host.all_plugins().is_empty());
+    assert_eq!(e.host.all_plugins().len(), 0);
 }
 
 // Not ported (6): Constructor_ShouldBeCollectible, Constructor_ShouldSetName,
@@ -470,7 +470,7 @@ async fn uninstall_removes_files_history_and_contributions() {
     assert!(r.success, "{r:?}");
     assert!(e.host.plugin("a").is_none());
     assert!(!e.host.paths.plugins.join("a").exists());
-    assert!(e.host.available_versions("a").await.is_empty());
+    assert_eq!(e.host.available_versions("a").await.len(), 0);
     assert!(!e.f.commands.has_command("a.run"));
 }
 

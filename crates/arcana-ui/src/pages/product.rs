@@ -301,7 +301,7 @@ mod tests {
         assert_eq!(ProductForm::get(&p, 11), "0.25");
         assert_eq!(ProductForm::get(&p, 12), "false");
         for i in [2, 10] {
-            assert!(!ProductForm::get(&p, i).is_empty());
+            assert_ne!(ProductForm::get(&p, i).len(), 0);
         }
         assert!(ProductForm::set(&mut p, 5, "abc").is_err());
         assert!(ProductForm::set(&mut p, 3, "x").is_err());
@@ -309,8 +309,8 @@ mod tests {
         assert!(ProductForm::set(&mut p, 3, "").is_ok());
         assert!(ProductForm::set(&mut p, 11, "").is_ok());
         assert_eq!(ProductForm::get(&p, 11), "");
-        assert!(ProductForm::validate(&p).is_empty());
-        assert!(!ProductForm::validate(&Product::default()).is_empty());
+        assert_eq!(ProductForm::validate(&p).len(), 0);
+        assert_ne!(ProductForm::validate(&Product::default()).len(), 0);
         assert_eq!(ProductForm::FIELDS.len(), 13);
         assert_eq!(ProductList::cells(&p).len(), ProductList::COLUMNS.len());
         assert_eq!(ProductList::label(&p), "P009");

@@ -17,8 +17,8 @@ fn identity_defaults_match_csharp_initialisers() {
     assert!(UserPermission::default().is_granted);
     assert_eq!(AuditLog::default().event_type, AuditEventType::LoginSuccess);
     assert!(!AuditLog::default().is_success);
-    assert!(Role::default().user_roles.is_empty());
-    assert!(AppPermission::default().role_permissions.is_empty());
+    assert_eq!(Role::default().user_roles.len(), 0);
+    assert_eq!(AppPermission::default().role_permissions.len(), 0);
     assert!(UserRole::default().user.is_none());
     assert!(RolePermission::default().permission.is_none());
 }

@@ -64,7 +64,7 @@ fn optional_properties_should_default_to_none() {
     assert!(i.description.is_none());
     assert!(i.author.is_none());
     assert!(i.icon_path.is_none());
-    assert!(i.dependencies.is_empty());
+    assert_eq!(i.dependencies.len(), 0);
     assert!(i.last_activated_at.is_none());
 }
 
@@ -91,7 +91,7 @@ fn built_in_cannot_uninstall_or_upgrade() {
 // PluginInfo_Metadata_DefaultIsEmptyDictionary
 #[test]
 fn metadata_default_is_empty() {
-    assert!(builtin_info().metadata.is_empty());
+    assert_eq!(builtin_info().metadata.len(), 0);
 }
 
 // PluginInfo_InstalledAt_DefaultsToApproxNow

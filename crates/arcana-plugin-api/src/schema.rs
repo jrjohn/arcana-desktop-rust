@@ -177,6 +177,6 @@ mod tests {
     fn no_configuration_means_no_fields() {
         let m =
             PluginManifest::from_json(r#"{"id":"x","name":"X","version":"1"}"#).unwrap_or_default();
-        assert!(settings_form(&m).is_empty());
+        assert_eq!(settings_form(&m).len(), 0);
     }
 }

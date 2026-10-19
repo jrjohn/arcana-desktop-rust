@@ -149,8 +149,8 @@ fn deactivate_should_cleanup_subscriptions() {
     assert!(r.is_ok());
     assert_eq!(f.menus.all_menu_items().len(), 1);
     assert!(p.deactivate().is_ok());
-    assert!(f.menus.all_menu_items().is_empty());
-    assert!(f.views.all_views().is_empty());
+    assert_eq!(f.menus.all_menu_items().len(), 0);
+    assert_eq!(f.views.all_views().len(), 0);
     assert!(!f.commands.has_command("valid.command"));
 }
 
@@ -160,7 +160,7 @@ fn deactivate_should_cleanup_subscriptions() {
 fn menu_registry_registers_item_with_validation_warnings() {
     let reg = MenuRegistryImpl::new();
     let item = MenuItemDefinition::new("test.menu", "Test", MenuLocation::MainMenu).with_order(-5);
-    assert!(!validate_menu_item(&item).warnings.is_empty());
+    assert_ne!(validate_menu_item(&item).warnings.len(), 0);
     assert!(reg.register_menu_item(item).is_ok());
     assert_eq!(reg.all_menu_items().len(), 1);
 }
@@ -173,7 +173,7 @@ fn view_registry_registers_view_with_validation_warnings() {
         view_class_name: Some("object".into()),
         ..ViewDefinition::new("TestPage", "Test")
     };
-    assert!(!validate_view(&view).warnings.is_empty());
+    assert_ne!(validate_view(&view).warnings.len(), 0);
     assert!(reg.register_view(view).is_ok());
     assert_eq!(reg.all_views().len(), 1);
 }

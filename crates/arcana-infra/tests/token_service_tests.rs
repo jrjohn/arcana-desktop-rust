@@ -42,7 +42,7 @@ fn close(a: chrono::NaiveDateTime, b: chrono::NaiveDateTime) -> bool {
 #[test]
 fn generate_access_token_valid_user_should_return_token() {
     let r = service().generate_access_token(&user());
-    assert!(!r.token.trim().is_empty());
+    assert_ne!(r.token.trim().len(), 0);
     assert!(r.expires_at > utc_now());
 }
 
