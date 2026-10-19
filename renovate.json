@@ -2,5 +2,19 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "local>jrjohn/renovate-config"
+  ],
+  "packageRules": [
+    {
+      "description": "Major bumps need Dependency Dashboard approval instead of auto-opening PRs (ci-flow burned ~355M tokens on #17/#18).",
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true
+    },
+    {
+      "description": "Cargo 0.x minor bumps are breaking under Cargo semver; treat them like majors.",
+      "matchManagers": ["cargo"],
+      "matchUpdateTypes": ["minor"],
+      "matchCurrentVersion": "/^[~^=]?0\\./",
+      "dependencyDashboardApproval": true
+    }
   ]
 }
