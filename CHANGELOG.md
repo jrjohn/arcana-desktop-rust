@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.1](https://github.com/jrjohn/arcana-desktop-rust/compare/v0.2.0...v0.2.1) (2026-10-19)
+
+
+### Bug Fixes
+
+* **ci:** Windows 不再每次 cargo clean,改關 incremental ([#22](https://github.com/jrjohn/arcana-desktop-rust/issues/22)) ([ea31a7d](https://github.com/jrjohn/arcana-desktop-rust/commit/ea31a7d891f2dd1ac15c26e3e6cc97afb5411d88))
+* **ci:** Windows 所有分支共用一個 CARGO_TARGET_DIR ([#23](https://github.com/jrjohn/arcana-desktop-rust/issues/23)) ([6ca70b6](https://github.com/jrjohn/arcana-desktop-rust/commit/6ca70b6c5f1afc2a250b1cd85ee29236191bb11c))
+* **ci:** 不再漏容器塞爆 /data;Windows 固定 Rust 版本 ([#20](https://github.com/jrjohn/arcana-desktop-rust/issues/20)) ([6e16d9f](https://github.com/jrjohn/arcana-desktop-rust/commit/6e16d9fbf0ff907dc07f44a3779c3daabd20c92b))
+* **deps:** update rust crate base64 to 0.23 ([#18](https://github.com/jrjohn/arcana-desktop-rust/issues/18)) ([1338dec](https://github.com/jrjohn/arcana-desktop-rust/commit/1338dec1b03d08ff706481309e73d1e96914651a))
+* **deps:** update rust crate dirs to v7 ([#17](https://github.com/jrjohn/arcana-desktop-rust/issues/17)) ([48405a9](https://github.com/jrjohn/arcana-desktop-rust/commit/48405a9dc571642f1aac825f926695f6d161ec79))
+* **deps:** update rust docker tag to v1.99 ([#24](https://github.com/jrjohn/arcana-desktop-rust/issues/24)) ([0c33564](https://github.com/jrjohn/arcana-desktop-rust/commit/0c3356402db4b21c163cd18c01536926fc75ad6c))
+
 ## [0.2.0](https://github.com/jrjohn/arcana-desktop-rust/compare/v0.1.0...v0.2.0) (2026-10-16)
 
 
