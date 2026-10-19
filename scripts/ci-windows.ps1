@@ -57,11 +57,13 @@ $wt = ''
 if (Get-Command wasm-tools -ErrorAction SilentlyContinue) { $wt = (& wasm-tools --version) -join '' }
 if ($wt -notmatch '^wasm-tools 1\.262\.0') { Run cargo @('install', 'wasm-tools', '--version', '1.262.0', '--locked') }
 Run rustc @('--version')
-# This agent is a persistent native Windows box (no container, no ephemeral workspace):
-# an interrupted build (agent disconnect mid-compile) leaves corrupt incremental .rmeta
-# files in target/, which every later build then reuses and fails on (E0786 invalid
-# metadata) regardless of source changes. Start each run from a known-clean target/.
-Run cargo @('clean')
+# No `cargo clean` per run any more: it made every Windows build a 50-64 min cold compile
+# (one hit the 90 min stage timeout, 2026-10-19). The corruption it guarded against
+# ("can't find crate for std", E0786 invalid metadata) came from TWO builds running on this
+# agent at once (fixed: numExecutors 1, arcana-devops #51). Incremental artifacts are the
+# part an interrupted build can leave half-written, so turn incremental off and keep the
+# reusable dependency/target cache.
+$env:CARGO_INCREMENTAL = '0'
 # Example WASM plugin component for the sandbox tests (scripts/build-wasm-example.sh).
 Run cargo @('build', '--release', '--target', 'wasm32-unknown-unknown', '--manifest-path', 'plugins-wasm/example/Cargo.toml', '--target-dir', 'target/wasm-example')
 New-Item -ItemType Directory -Force -Path 'target/wasm' | Out-Null
