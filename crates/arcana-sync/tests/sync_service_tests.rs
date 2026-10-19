@@ -336,7 +336,7 @@ async fn options_defaults_and_hub_transport_directly() {
     };
     t.push(std::slice::from_ref(&ch)).await.unwrap();
     assert_eq!(t.pull("y").await.unwrap(), std::slice::from_ref(&ch));
-    assert!(t.pull("y").await.unwrap().is_empty());
-    assert!(t.pull("x").await.unwrap().is_empty());
+    assert_eq!(t.pull("y").await.unwrap().len(), 0);
+    assert_eq!(t.pull("x").await.unwrap().len(), 0);
     assert_eq!(SyncState::default(), SyncState::Idle);
 }

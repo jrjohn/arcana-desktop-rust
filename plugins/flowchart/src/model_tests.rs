@@ -9,7 +9,7 @@ use super::*;
 #[test]
 fn constructor_sets_default_values() {
     let node = DiagramNode::default();
-    assert!(!node.id.is_empty());
+    assert_ne!(node.id.len(), 0);
     assert_eq!(node.shape, NodeShape::Rectangle);
     assert_eq!(node.width, 120.0);
     assert_eq!(node.height, 60.0);
@@ -17,7 +17,7 @@ fn constructor_sets_default_values() {
     assert_eq!(node.stroke_color, "#000000");
     assert_eq!(node.stroke_width, 2.0);
     assert_eq!(node.font_size, 14.0);
-    assert!(node.text.is_empty());
+    assert_eq!(node.text.len(), 0);
 }
 
 // C#: Clone_CreatesDeepCopy
@@ -107,8 +107,8 @@ fn id_is_unique_per_instance() {
 fn create_new_returns_empty_diagram() {
     let d = Diagram::create_new("Test Diagram");
     assert_eq!(d.name, "Test Diagram");
-    assert!(d.nodes.is_empty());
-    assert!(d.edges.is_empty());
+    assert_eq!(d.nodes.len(), 0);
+    assert_eq!(d.edges.len(), 0);
     assert!(d.show_grid);
     assert!(d.snap_to_grid);
 }
@@ -162,7 +162,7 @@ fn remove_node_removes_node_and_connected_edges() {
     d.remove_node(&id1);
     assert_eq!(d.nodes.len(), 1);
     assert_eq!(d.nodes[0].text, "Node 2");
-    assert!(d.edges.is_empty());
+    assert_eq!(d.edges.len(), 0);
 }
 
 // C#: GetNode_ReturnsCorrectNode

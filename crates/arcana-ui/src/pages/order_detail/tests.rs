@@ -98,7 +98,7 @@ fn existing_order_is_read_until_edit() {
     assert_eq!(vm.state.item_discount_text, vec!["5".to_owned()]);
     assert_eq!(vm.state.selected_customer().map(|c| c.base.id), Some(5));
     // Edits are ignored until Edit.
-    assert!(vm.on(Input::IncreaseQuantity(0)).is_empty());
+    assert_eq!(vm.on(Input::IncreaseQuantity(0)).len(), 0);
     assert_eq!(vm.state.order.items[0].quantity, dec!(3));
     let _ = vm.on(Input::Edit);
     assert!(vm.state.is_editing);
@@ -133,8 +133,9 @@ fn selecting_customer_copies_shipping_details() {
 #[test]
 fn product_search_and_add_item_merges_lines() {
     let mut vm = opened_new();
-    assert!(
-        vm.on(Input::SearchProducts).is_empty(),
+    assert_eq!(
+        vm.on(Input::SearchProducts).len(),
+        0,
         "blank search does nothing"
     );
     let _ = vm.on(Input::ProductSearchChanged(" P00 ".into()));
@@ -146,7 +147,7 @@ fn product_search_and_add_item_merges_lines() {
     let _ = vm.on(Input::AddItem(2));
     let _ = vm.on(Input::AddItem(1));
     let _ = vm.on(Input::AddItem(2));
-    assert!(vm.on(Input::AddItem(42)).is_empty());
+    assert_eq!(vm.on(Input::AddItem(42)).len(), 0);
     let items = &vm.state.order.items;
     assert_eq!(items.len(), 2);
     assert_eq!(
@@ -167,10 +168,7 @@ fn quantity_discount_remove_and_clear_recalculate() {
     let _ = vm.on(Input::DecreaseQuantity(0));
     let _ = vm.on(Input::DecreaseQuantity(0));
     assert_eq!(vm.state.order.items[0].quantity, dec!(1));
-    assert!(
-        vm.on(Input::DecreaseQuantity(0)).is_empty(),
-        "never below 1"
-    );
+    assert_eq!(vm.on(Input::DecreaseQuantity(0)).len(), 0, "never below 1");
     let _ = vm.on(Input::ItemDiscountChanged(0, "10".into()));
     assert_eq!(vm.state.order.items[0].discount_percent, dec!(10));
     assert_eq!(vm.state.order.subtotal, dec!(108));
@@ -181,9 +179,9 @@ fn quantity_discount_remove_and_clear_recalculate() {
         dec!(10),
         "bad text keeps value"
     );
-    assert!(vm.on(Input::ItemDiscountChanged(9, "1".into())).is_empty());
-    assert!(vm.on(Input::IncreaseQuantity(9)).is_empty());
-    assert!(vm.on(Input::RemoveItem(9)).is_empty());
+    assert_eq!(vm.on(Input::ItemDiscountChanged(9, "1".into())).len(), 0);
+    assert_eq!(vm.on(Input::IncreaseQuantity(9)).len(), 0);
+    assert_eq!(vm.on(Input::RemoveItem(9)).len(), 0);
     let _ = vm.on(Input::RemoveItem(0));
     assert!(!vm.state.has_items());
     assert_eq!(vm.state.order.total_amount, Decimal::ZERO);
@@ -264,7 +262,7 @@ fn save_new_then_saved_switches_to_view_mode() {
     };
     assert_eq!(order.customer_name, "Taoyuan");
     assert!(vm.state.validation.is_empty() && vm.state.is_busy);
-    assert!(vm.on(Input::Save).is_empty(), "busy");
+    assert_eq!(vm.on(Input::Save).len(), 0, "busy");
     let mut saved = (**order).clone();
     saved.base.id = 77;
     let fx = vm.on(Input::Saved(Ok(saved)));
@@ -309,14 +307,14 @@ fn cancel_confirms_when_dirty_and_closes_or_reloads() {
 #[test]
 fn copy_turns_order_into_new_draft() {
     let mut vm = opened_new();
-    assert!(vm.on(Input::Copy).is_empty(), "nothing to copy yet");
+    assert_eq!(vm.on(Input::Copy).len(), 0, "nothing to copy yet");
     let mut vm = opened_existing(true);
     let _ = vm.on(Input::Copy);
     let s = &vm.state;
     assert_eq!(s.copied_from.as_deref(), Some("ORD-202512-0010"));
     assert!(s.is_new && s.is_editing && !s.read_only);
     assert_eq!(s.order.base.id, 0);
-    assert!(s.order.order_number.is_empty());
+    assert_eq!(s.order.order_number.len(), 0);
     assert_eq!(s.order.items[0].base.id, 0);
     assert!(matches!(&vm.on(Input::Print)[0], Effect::Notify(_)));
 }
@@ -324,7 +322,7 @@ fn copy_turns_order_into_new_draft() {
 #[test]
 fn load_error_and_busy_guard() {
     let (mut vm, _) = ViewModel::new(Some(1), false);
-    assert!(vm.on(Input::Load).is_empty());
+    assert_eq!(vm.on(Input::Load).len(), 0);
     let fx = vm.on(Input::Loaded(Err("Order with ID 1 not found".into())));
     assert!(matches!(&fx[0], Effect::Notify(_)));
     assert!(vm.state.error.is_some() && !vm.state.is_loading);

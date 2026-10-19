@@ -16,7 +16,7 @@ fn vals(r: &MvRegister<&'static str>) -> Vec<&'static str> {
 #[test]
 fn constructor_default_should_be_empty() {
     let r = MvRegister::<String>::new();
-    assert!(r.values().is_empty());
+    assert_eq!(r.values().len(), 0);
     assert!(!r.has_conflict());
 }
 
@@ -107,11 +107,12 @@ fn single_value_with_multiple_values_should_throw() {
 // Merge_EmptyRegisters_ShouldReturnEmpty
 #[test]
 fn merge_empty_registers_should_return_empty() {
-    assert!(
+    assert_eq!(
         MvRegister::<u8>::new()
             .merge(&MvRegister::new())
             .values()
-            .is_empty()
+            .len(),
+        0
     );
 }
 

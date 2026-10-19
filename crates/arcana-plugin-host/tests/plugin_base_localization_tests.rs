@@ -63,7 +63,7 @@ fn load_external_directory_not_exists_registers_nothing() {
             .load_external_localization(Some(&d.path().join("non_existent_locales"))),
         0
     );
-    assert!(f.l10n.calls().is_empty());
+    assert_eq!(f.l10n.calls().len(), 0);
 }
 
 // LoadExternalLocalizationAsync_InvalidJson_ShouldLogError
@@ -75,7 +75,7 @@ fn load_external_invalid_json_is_skipped() {
     write(&loc.join("invalid.json"), "{ invalid json }");
     let p = active(&f, d.path());
     assert_eq!(p.base().load_external_localization(Some(&loc)), 0);
-    assert!(f.l10n.calls().is_empty());
+    assert_eq!(f.l10n.calls().len(), 0);
 }
 
 // LoadExternalLocalizationAsync_EmptyDirectory_ShouldNotRegisterAnything
@@ -87,7 +87,7 @@ fn load_external_empty_directory_should_not_register_anything() {
     std::fs::create_dir_all(&loc).unwrap_or_else(|e| panic!("{e}"));
     let p = active(&f, d.path());
     assert_eq!(p.base().load_external_localization(Some(&loc)), 0);
-    assert!(f.l10n.calls().is_empty());
+    assert_eq!(f.l10n.calls().len(), 0);
 }
 
 // LoadExternalLocalizationAsync_DefaultPath_ShouldUsePluginPathLocales
@@ -167,7 +167,7 @@ fn load_file_invalid_json_returns_false() {
     write(&file, "not valid json");
     let p = active(&f, d.path());
     assert!(!p.base().load_localization_file("en-US", &file));
-    assert!(f.l10n.calls().is_empty());
+    assert_eq!(f.l10n.calls().len(), 0);
 }
 
 // RegisterResources_ShouldCallLocalizationService

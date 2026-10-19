@@ -35,7 +35,7 @@ fn snapshot(state: HealthState, at: DateTime<Utc>) -> PluginHealthStatus {
 
 /// `GetVersionsAsync_EmptyDatabase_ShouldReturnEmptyList`
 pub async fn get_versions_empty_database_should_return_empty_list(s: &dyn PluginVersionStore) {
-    assert!(s.versions("plugin-1").await.unwrap().is_empty());
+    assert_eq!(s.versions("plugin-1").await.unwrap().len(), 0);
 }
 
 /// `GetVersionsAsync_WithVersions_ShouldReturnOrdered`
@@ -204,7 +204,7 @@ pub async fn delete_all_versions_should_delete_all_versions(s: &dyn PluginVersio
     add(s, "plugin-1", "2.0.0", now, false).await;
     add(s, "plugin-2", "1.0.0", now, false).await;
     s.delete_all_versions("plugin-1").await.unwrap();
-    assert!(s.versions("plugin-1").await.unwrap().is_empty());
+    assert_eq!(s.versions("plugin-1").await.unwrap().len(), 0);
     assert_eq!(s.versions("plugin-2").await.unwrap().len(), 1);
 }
 
@@ -308,7 +308,7 @@ pub async fn get_health_history_empty_range_should_return_empty(s: &dyn PluginVe
         )
         .await
         .unwrap();
-    assert!(h.is_empty());
+    assert_eq!(h.len(), 0);
 }
 
 /// `GetHealthHistoryAsync_ShouldOrderByNewestFirst`

@@ -236,8 +236,8 @@ mod tests {
     #[test]
     fn sample_mode_loads_the_sample_diagram() {
         let (vm, fx) = ViewModel::new(&FlowMode::Sample);
-        assert!(fx.is_empty());
-        assert!(!vm.editor.state.diagram.nodes.is_empty());
+        assert_eq!(fx.len(), 0);
+        assert_ne!(vm.editor.state.diagram.nodes.len(), 0);
     }
 
     #[test]
@@ -309,7 +309,7 @@ mod tests {
             path: None,
             native: true,
         });
-        assert!(fx.is_empty());
+        assert_eq!(fx.len(), 0);
         assert!(vm.prompt.is_none(), "user cancelled: no fallback prompt");
     }
 

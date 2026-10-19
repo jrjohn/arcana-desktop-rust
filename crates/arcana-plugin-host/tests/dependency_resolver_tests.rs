@@ -89,7 +89,7 @@ fn resolve_unsatisfied_version_constraint_should_fail() {
     r.register("plugin-b", v("1.5.0"), vec![]);
     let res = r.resolve();
     assert!(!res.success);
-    assert!(!res.conflicts.is_empty());
+    assert_ne!(res.conflicts.len(), 0);
 }
 
 /// `Resolve_ConflictingVersionRequirements_ShouldFail`
@@ -101,7 +101,7 @@ fn resolve_conflicting_version_requirements_should_fail() {
     r.register("plugin-c", v("1.5.0"), vec![]);
     let res = r.resolve();
     assert!(!res.success);
-    assert!(!res.conflicts.is_empty());
+    assert_ne!(res.conflicts.len(), 0);
 }
 
 /// `Resolve_CaretVersionConstraint_ShouldAllowMinorUpdates`
@@ -121,7 +121,7 @@ fn resolve_caret_version_constraint_should_reject_major_updates() {
     r.register("plugin-b", v("2.0.0"), vec![]);
     let res = r.resolve();
     assert!(!res.success);
-    assert!(!res.conflicts.is_empty());
+    assert_ne!(res.conflicts.len(), 0);
 }
 
 /// `Resolve_MissingDependency_ShouldFail`
@@ -131,7 +131,7 @@ fn resolve_missing_dependency_should_fail() {
     r.register("plugin-a", v("1.0.0"), vec![d("plugin-b@^1.0.0")]);
     let res = r.resolve();
     assert!(!res.success);
-    assert!(!res.missing_dependencies.is_empty());
+    assert_ne!(res.missing_dependencies.len(), 0);
 }
 
 /// `Resolve_OptionalMissingDependency_ShouldSucceed`

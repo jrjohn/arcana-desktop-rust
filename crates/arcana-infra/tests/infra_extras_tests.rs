@@ -72,7 +72,7 @@ fn json_settings_ignores_corrupt_file_and_reports_write_errors() {
     let path = dir.path().join("s.json");
     std::fs::write(&path, "not json").unwrap();
     let s = JsonSettingsService::new(&path);
-    assert!(s.get_all().is_empty());
+    assert_eq!(s.get_all().len(), 0);
     // A directory where the file should be cannot be written.
     let bad = JsonSettingsService::new(dir.path());
     assert_eq!(

@@ -125,7 +125,7 @@ fn type_without_fields_keeps_local_on_field_merge() {
         (now, now + TimeDelta::seconds(1)),
     );
     assert_eq!(r.result, Bare("l".into()));
-    assert!(Bare::fields().is_empty());
+    assert_eq!(Bare::fields().len(), 0);
 }
 
 #[test]

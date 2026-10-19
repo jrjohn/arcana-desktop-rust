@@ -77,7 +77,7 @@ fn register_without_base_path() {
 // GetAllManifests_NoManifests_ShouldReturnEmpty
 #[test]
 fn all_empty() {
-    assert!(ManifestService::new().all_manifests().is_empty());
+    assert_eq!(ManifestService::new().all_manifests().len(), 0);
 }
 
 // GetAllManifests_MultipleRegistered_ShouldReturnAll
@@ -146,10 +146,11 @@ fn startup_command_only() {
 // GetActivationEvents_UnknownPlugin_ShouldReturnEmpty
 #[test]
 fn events_unknown() {
-    assert!(
+    assert_eq!(
         ManifestService::new()
             .activation_events("nonexistent")
-            .is_empty()
+            .len(),
+        0
     );
 }
 
@@ -158,7 +159,7 @@ fn events_unknown() {
 fn events_null() {
     let s = ManifestService::new();
     s.register_manifest(def(), None);
-    assert!(s.activation_events("test.plugin").is_empty());
+    assert_eq!(s.activation_events("test.plugin").len(), 0);
 }
 
 // GetActivationEvents_WithEvents_ShouldReturnThem
@@ -181,7 +182,7 @@ fn for_event(x: PluginManifest, arg: Option<&str>) -> Vec<String> {
 // GetPluginsForActivationEvent_NoMatches_ShouldReturnEmpty
 #[test]
 fn for_event_none() {
-    assert!(for_event(def(), Some("test")).is_empty());
+    assert_eq!(for_event(def(), Some("test")).len(), 0);
 }
 
 // GetPluginsForActivationEvent_StarMatch_ShouldReturnAll
@@ -330,10 +331,11 @@ fn load_missing_id() {
 // DiscoverManifestsAsync_DirectoryNotFound_ShouldReturnEmpty
 #[test]
 fn discover_missing_dir() {
-    assert!(
+    assert_eq!(
         ManifestService::new()
             .discover_manifests(Path::new("/tmp/nonexistent-plugins-dir-xyz"))
-            .is_empty()
+            .len(),
+        0
     );
 }
 

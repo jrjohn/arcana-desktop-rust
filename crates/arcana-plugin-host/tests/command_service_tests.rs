@@ -205,7 +205,7 @@ fn commands_lists_all() {
 // GetCommands_NoRegistrations_ShouldReturnEmptyList
 #[test]
 fn commands_empty() {
-    assert!(CommandServiceImpl::new().commands().is_empty());
+    assert_eq!(CommandServiceImpl::new().commands().len(), 0);
 }
 
 // HasCommand_RegisteredCommand_ShouldReturnTrue
@@ -239,7 +239,7 @@ fn dispose_removes() {
     let sub = s.register_command("test.command", noop()).unwrap();
     sub.dispose();
     assert!(!s.has_command("test.command"));
-    assert!(s.commands().is_empty());
+    assert_eq!(s.commands().len(), 0);
 }
 
 // Dispose_Subscription_ExecuteAsync_ShouldThrow
@@ -269,7 +269,7 @@ fn dispose_then_reregister() {
 #[test]
 fn constructor() {
     let s = CommandServiceImpl::default();
-    assert!(s.commands().is_empty());
+    assert_eq!(s.commands().len(), 0);
 }
 
 // ConcurrentRegistration_ShouldBeThreadSafe

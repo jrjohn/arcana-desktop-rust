@@ -357,7 +357,7 @@ mod tests {
         assert!(vm.state.can(RuntimeAction::Deactivate));
         assert!(!vm.state.can(RuntimeAction::Activate));
         assert!(!vm.state.can(RuntimeAction::Uninstall));
-        assert!(vm.on(Input::Runtime(RuntimeAction::Uninstall)).is_empty());
+        assert_eq!(vm.on(Input::Runtime(RuntimeAction::Uninstall)).len(), 0);
         let fx = vm.on(Input::Runtime(RuntimeAction::Deactivate));
         assert_eq!(
             fx,

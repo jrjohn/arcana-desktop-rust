@@ -286,5 +286,5 @@ fn dispose_removes_factory() {
 // Constructor_WithoutLogger_ShouldWork
 #[test]
 fn constructor() {
-    assert!(ViewRegistryImpl::default().all_views().is_empty());
+    assert_eq!(ViewRegistryImpl::default().all_views().len(), 0);
 }

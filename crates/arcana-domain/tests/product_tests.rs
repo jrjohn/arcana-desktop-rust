@@ -179,13 +179,13 @@ fn product_category_sort_order_default_value_should_be_zero() {
 /// C#: `ProductCategory_Children_DefaultValue_ShouldBeEmpty`
 #[test]
 fn product_category_children_default_value_should_be_empty() {
-    assert!(category("C", "Cat").children.is_empty());
+    assert_eq!(category("C", "Cat").children.len(), 0);
 }
 
 /// C#: `ProductCategory_Products_DefaultValue_ShouldBeEmpty`
 #[test]
 fn product_category_products_default_value_should_be_empty() {
-    assert!(category("C", "Cat").products.is_empty());
+    assert_eq!(category("C", "Cat").products.len(), 0);
 }
 
 /// C#: `ProductCategory_Parent_ShouldBeSettable`

@@ -257,12 +257,12 @@ mod tests {
             assert!(CustomerForm::set(&mut c, i, v).is_ok(), "{i}");
         }
         for i in 0..CustomerForm::FIELDS.len() {
-            assert!(!CustomerForm::get(&c, i).is_empty(), "{i}");
+            assert_ne!(CustomerForm::get(&c, i).len(), 0, "{i}");
         }
         assert_eq!(CustomerForm::get(&c, 11), "5000.00");
         assert!(CustomerForm::set(&mut c, 11, "lots").is_err());
-        assert!(CustomerForm::validate(&c).is_empty());
-        assert!(!CustomerForm::validate(&Customer::default()).is_empty());
+        assert_eq!(CustomerForm::validate(&c).len(), 0);
+        assert_ne!(CustomerForm::validate(&Customer::default()).len(), 0);
         assert_eq!(CustomerList::cells(&c).len(), CustomerList::COLUMNS.len());
         assert_eq!(CustomerList::label(&c), "C009");
         assert_eq!(CustomerList::id(&c), 0);

@@ -75,6 +75,6 @@ mod tests {
         assert!(
             matches!(&d[0], WindowRequest::Message { level: MessageLevel::Info, actions, .. } if actions == &["OK"])
         );
-        assert!(w.drain().is_empty());
+        assert_eq!(w.drain().len(), 0);
     }
 }

@@ -257,7 +257,7 @@ async fn update_order_repository_throws_should_return_failure() {
 async fn delete_order_existing_order_should_return_success() {
     let repo = Fake::with(vec![o1()]);
     svc(&repo).delete_order(1).await.unwrap();
-    assert!(repo.items.lock().unwrap().is_empty());
+    assert_eq!(repo.items.lock().unwrap().len(), 0);
 }
 
 // DeleteOrderAsync_NotFound_ShouldReturnFailure

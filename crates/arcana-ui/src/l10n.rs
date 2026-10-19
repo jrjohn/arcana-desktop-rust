@@ -105,7 +105,7 @@ mod tests {
         let en = parse(UI[0].1);
         for (culture, json) in &UI {
             let table = parse(json);
-            assert!(!table.is_empty(), "{culture}");
+            assert_ne!(table.len(), 0, "{culture}");
             for k in en.keys() {
                 assert!(table.contains_key(k), "{culture} missing {k}");
             }

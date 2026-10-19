@@ -128,7 +128,7 @@ mod tests {
     #[test]
     fn empty_and_map_and_display() {
         let e = PagedResult::<u8>::empty(1, 10);
-        assert!(e.items.is_empty());
+        assert_eq!(e.items.len(), 0);
         assert_eq!(e.total_count, 0);
         let m = PagedResult::new(vec![1, 2], 2, 2, 5).map(|x| x * 10);
         assert_eq!(m, PagedResult::new(vec![10, 20], 2, 2, 5));

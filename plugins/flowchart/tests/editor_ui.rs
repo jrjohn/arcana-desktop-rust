@@ -244,7 +244,7 @@ fn dragging_segment_midpoint_adds_a_bend() {
         origin + egui::vec2(310.0, 230.0),
     );
     let e = &h.state().state.diagram.edges[0];
-    assert!(!e.waypoints.is_empty(), "bend added");
+    assert_ne!(e.waypoints.len(), 0, "bend added");
     let w = *e
         .waypoints
         .iter()

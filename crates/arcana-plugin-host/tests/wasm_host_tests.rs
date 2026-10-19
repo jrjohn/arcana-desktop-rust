@@ -8,7 +8,7 @@ mod host;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use arcana_plugin_api::{CommandService, PluginState};
+use arcana_plugin_api::{CommandService, PluginPermission, PluginState};
 use arcana_plugin_host::compat::HOST_ABI_VERSION;
 use arcana_plugin_host::wasm::WasmLoader;
 
@@ -49,7 +49,10 @@ async fn wasm_package_installs_activates_lazily_and_renders() {
     assert!(r.success, "{r:?}");
     assert_eq!(host.state("example.counter"), PluginState::Loaded);
     // Requested permission is pending, not granted.
-    assert!(host.permissions.permissions("example.counter").is_empty());
+    assert_eq!(
+        host.permissions.permissions("example.counter"),
+        PluginPermission::NONE
+    );
     // Lazy command activates the plugin and runs the guest's command.
     fx.commands.execute("inc", Vec::new()).unwrap();
     assert_eq!(host.state("example.counter"), PluginState::Active);
@@ -76,7 +79,10 @@ async fn wasm_file_read_denied_until_approved() {
     // `read` with no grant: the guest's import call is refused, command fails.
     assert!(fx.commands.execute("read", Vec::new()).is_err());
     assert!(host.approve_permissions("example.counter").success);
-    assert!(!host.permissions.permissions("example.counter").is_empty());
+    assert_ne!(
+        host.permissions.permissions("example.counter"),
+        PluginPermission::NONE
+    );
 }
 
 #[tokio::test]

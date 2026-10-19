@@ -103,7 +103,7 @@ fn register_many_one_invalid() {
         valid("menu.test3"),
     ]);
     assert!(matches!(e, Err(AppError::Validation { .. })));
-    assert!(r.all_menu_items().is_empty());
+    assert_eq!(r.all_menu_items().len(), 0);
 }
 
 // RegisterMenuItems_ShouldRaiseMenusChangedEventOnce
@@ -122,7 +122,7 @@ fn register_many_bumps_once() {
 fn dispose_removes() {
     let r = MenuRegistryImpl::new();
     r.register_menu_item(valid("menu.test")).unwrap().dispose();
-    assert!(r.all_menu_items().is_empty());
+    assert_eq!(r.all_menu_items().len(), 0);
 }
 
 // Dispose_Subscription_ShouldRaiseMenusChangedEvent
@@ -142,7 +142,7 @@ fn dispose_many() {
     r.register_menu_items(vec![valid("menu.test1"), valid("menu.test2")])
         .unwrap()
         .dispose();
-    assert!(r.all_menu_items().is_empty());
+    assert_eq!(r.all_menu_items().len(), 0);
 }
 
 // GetMenuItems_ByLocation_ShouldFilterCorrectly
@@ -195,5 +195,5 @@ fn ordered_by_order() {
 // Constructor_WithoutLogger_ShouldWork
 #[test]
 fn constructor() {
-    assert!(MenuRegistryImpl::default().all_menu_items().is_empty());
+    assert_eq!(MenuRegistryImpl::default().all_menu_items().len(), 0);
 }

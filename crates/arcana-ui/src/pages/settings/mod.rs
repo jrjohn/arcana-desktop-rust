@@ -156,7 +156,7 @@ mod tests {
             vm.on(Input::SelectTheme("Dark".into())),
             vec![Effect::Theme("Dark".into())]
         );
-        assert!(vm.on(Input::SelectTheme("Dark".into())).is_empty());
+        assert_eq!(vm.on(Input::SelectTheme("Dark".into())).len(), 0);
         assert_eq!(
             vm.on(Input::SelectAccent(Some(2))),
             vec![Effect::Accent(Some(2))]
@@ -165,8 +165,8 @@ mod tests {
             vm.on(Input::SelectLanguage("zh-TW".into())),
             vec![Effect::Culture("zh-TW".into())]
         );
-        assert!(vm.on(Input::SelectLanguage("zh-TW".into())).is_empty());
-        assert!(vm.on(Input::SelectLanguage("fr-FR".into())).is_empty());
+        assert_eq!(vm.on(Input::SelectLanguage("zh-TW".into())).len(), 0);
+        assert_eq!(vm.on(Input::SelectLanguage("fr-FR".into())).len(), 0);
         assert_eq!(vm.state.theme_id, "Dark");
         assert_eq!(vm.state.culture, "zh-TW");
     }
@@ -190,7 +190,7 @@ mod tests {
         );
         let _ = vm.on(Input::FrequencyChanged(7));
         assert_eq!(vm.state.sync_minutes, 5);
-        assert!(vm.on(Input::Saved(Ok(()))).is_empty());
+        assert_eq!(vm.on(Input::Saved(Ok(()))).len(), 0);
         assert_eq!(vm.on(Input::Saved(Err("disk".into()))).len(), 1);
     }
 

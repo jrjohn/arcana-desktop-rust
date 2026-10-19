@@ -32,7 +32,7 @@ fn undo_redo_restores_snapshots() {
     vm.on(Input::Undo);
     assert_eq!(vm.state.diagram.nodes.len(), 1);
     vm.on(Input::Undo);
-    assert!(vm.state.diagram.nodes.is_empty());
+    assert_eq!(vm.state.diagram.nodes.len(), 0);
     assert!(!vm.can_undo());
     assert_eq!(vm.on(Input::Undo), vec![]);
     vm.on(Input::Redo);
@@ -118,7 +118,7 @@ fn connect_adds_edge_and_rejects_self_loops() {
     // Deleting the node removes the edge too.
     vm.on(Input::SelectNode(Some(a)));
     vm.on(Input::DeleteSelected);
-    assert!(vm.state.diagram.edges.is_empty());
+    assert_eq!(vm.state.diagram.edges.len(), 0);
 }
 
 #[test]
@@ -213,7 +213,7 @@ fn diagram_properties_edit_with_undo() {
     vm.on(Input::SetDiagramDescription("desc".into()));
     assert_eq!(vm.state.diagram.name, "Flow A");
     assert_eq!(vm.state.diagram.description, "desc");
-    assert!(vm.on(Input::SetDiagramName("Flow A".into())).is_empty());
+    assert_eq!(vm.on(Input::SetDiagramName("Flow A".into())).len(), 0);
     vm.on(Input::Undo);
     assert_eq!(vm.state.diagram.description, "");
     vm.on(Input::SetShowGrid(false));
@@ -288,14 +288,15 @@ fn waypoints_insert_move_remove() {
             .contains(&Point::new(320.0, 60.0))
     );
     let count = vm.state.diagram.edges[0].waypoints.len();
-    assert!(
+    assert_eq!(
         vm.on(Input::MoveWaypoint {
             edge: e.clone(),
             index: 99,
             x: 0.0,
             y: 0.0
         })
-        .is_empty()
+        .len(),
+        0
     );
     vm.on(Input::RemoveWaypoint {
         edge: e.clone(),
@@ -304,10 +305,7 @@ fn waypoints_insert_move_remove() {
     assert_eq!(vm.state.diagram.edges[0].waypoints.len(), count - 1);
     vm.on(Input::Undo);
     assert_eq!(vm.state.diagram.edges[0].waypoints.len(), count);
-    assert!(
-        vm.on(Input::RemoveWaypoint { edge: e, index: 99 })
-            .is_empty()
-    );
+    assert_eq!(vm.on(Input::RemoveWaypoint { edge: e, index: 99 }).len(), 0);
 }
 
 #[test]

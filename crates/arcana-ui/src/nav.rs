@@ -331,7 +331,7 @@ mod tests {
         ];
         for r in all {
             assert_eq!(Route::from_id(r.id()), Some(r.clone()), "{r:?}");
-            assert!(!r.nav_section().is_empty());
+            assert_ne!(r.nav_section().len(), 0);
         }
         assert_eq!(Route::from_id(routes::HOME), Some(Route::Home));
         assert_eq!(Route::from_id("SalesReportPage"), None);

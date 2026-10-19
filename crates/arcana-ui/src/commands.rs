@@ -363,7 +363,7 @@ mod tests {
         let hits = CommandRegistry::search("order", |c| c.label_key.to_owned());
         assert!(hits.contains(&CommandId::OrderList));
         assert!(hits.contains(&CommandId::NewOrder));
-        assert!(CommandRegistry::search("  ", |_| String::new()).is_empty());
+        assert_eq!(CommandRegistry::search("  ", |_| String::new()).len(), 0);
         assert!(
             !CommandRegistry::search("search", |c| c.label_key.to_owned())
                 .contains(&CommandId::CommandSearch)

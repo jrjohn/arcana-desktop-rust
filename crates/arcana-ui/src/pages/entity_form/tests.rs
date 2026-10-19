@@ -78,7 +78,7 @@ fn loaded(vm: &mut ViewModel<Fake>, t: Thing) {
 fn new_form_validates_then_saves() {
     let (mut vm, fx) = ViewModel::<Fake>::new(None);
     assert_eq!(fx, vec![Effect::Run(Task::Load(None))]);
-    assert!(vm.on(Input::Load).is_empty());
+    assert_eq!(vm.on(Input::Load).len(), 0);
     loaded(&mut vm, Thing::default());
     assert_eq!(vm.state.options.len(), 1);
     let fx = vm.on(Input::Save);
@@ -94,8 +94,8 @@ fn new_form_validates_then_saves() {
 
     let _ = vm.on(Input::FieldChanged(1, "3".into()));
     let _ = vm.on(Input::FieldChanged(2, "true".into()));
-    assert!(vm.on(Input::FieldChanged(3, "9".into())).is_empty());
-    assert!(vm.on(Input::FieldChanged(99, "9".into())).is_empty());
+    assert_eq!(vm.on(Input::FieldChanged(3, "9".into())).len(), 0);
+    assert_eq!(vm.on(Input::FieldChanged(99, "9".into())).len(), 0);
     let fx = vm.on(Input::Save);
     let Some(Effect::Run(Task::Save {
         entity,
@@ -105,8 +105,8 @@ fn new_form_validates_then_saves() {
         panic!("{fx:?}")
     };
     assert_eq!((entity.qty, entity.active), (3, true));
-    assert!(vm.on(Input::Save).is_empty(), "busy");
-    assert!(vm.on(Input::FieldChanged(0, "x".into())).is_empty(), "busy");
+    assert_eq!(vm.on(Input::Save).len(), 0, "busy");
+    assert_eq!(vm.on(Input::FieldChanged(0, "x".into())).len(), 0, "busy");
     let mut saved = (**entity).clone();
     saved.id = 5;
     let fx = vm.on(Input::Saved(Ok(saved)));
@@ -159,5 +159,5 @@ fn save_error_cancel_and_delete() {
 
     let (mut fresh, _) = ViewModel::<Fake>::new(None);
     loaded(&mut fresh, Thing::default());
-    assert!(fresh.on(Input::Delete).is_empty(), "nothing to delete yet");
+    assert_eq!(fresh.on(Input::Delete).len(), 0, "nothing to delete yet");
 }

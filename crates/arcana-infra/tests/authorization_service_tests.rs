@@ -250,13 +250,7 @@ async fn get_user_permissions_returns_correct_set() {
 #[tokio::test]
 async fn get_user_permissions_non_existent_user_returns_empty() {
     let c = ctx().await;
-    assert!(
-        c.service
-            .get_user_permissions(9999)
-            .await
-            .unwrap()
-            .is_empty()
-    );
+    assert_eq!(c.service.get_user_permissions(9999).await.unwrap().len(), 0);
 }
 
 // GetUserRolesAsync_ReturnsCorrectRoles
@@ -274,7 +268,7 @@ async fn get_user_roles_returns_correct_roles() {
 #[tokio::test]
 async fn get_user_roles_non_existent_user_returns_empty() {
     let c = ctx().await;
-    assert!(c.service.get_user_roles(9999).await.unwrap().is_empty());
+    assert_eq!(c.service.get_user_roles(9999).await.unwrap().len(), 0);
 }
 
 // AuthorizeAsync_UserHasPermission_ShouldReturnSuccess
@@ -288,12 +282,13 @@ async fn authorize_user_has_permission_should_return_success() {
             .await
             .unwrap()
     );
-    assert!(
+    assert_eq!(
         AuditLogger::new(c.db.clone())
             .entries()
             .await
             .unwrap()
-            .is_empty()
+            .len(),
+        0
     );
 }
 
@@ -358,19 +353,14 @@ async fn expired_assignments_are_ignored() {
     let mut link = c.repo::<UserRole>().get_all().await.unwrap().remove(0);
     link.expires_at = Some(utc_now() - TimeDelta::hours(1));
     c.repo::<UserRole>().update(&mut link).await.unwrap();
-    assert!(
-        c.service
-            .get_user_roles(u.base.id)
-            .await
-            .unwrap()
-            .is_empty()
-    );
-    assert!(
+    assert_eq!(c.service.get_user_roles(u.base.id).await.unwrap().len(), 0);
+    assert_eq!(
         c.service
             .get_user_permissions(u.base.id)
             .await
             .unwrap()
-            .is_empty()
+            .len(),
+        0
     );
     let p = c.permission("temp").await;
     c.repo::<UserPermission>()
@@ -382,12 +372,13 @@ async fn expired_assignments_are_ignored() {
         })
         .await
         .unwrap();
-    assert!(
+    assert_eq!(
         c.service
             .get_user_permissions(u.base.id)
             .await
             .unwrap()
-            .is_empty()
+            .len(),
+        0
     );
     let _ = role;
 }
