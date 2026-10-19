@@ -42,7 +42,7 @@ subtle = "2"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", default-features = false, features = ["fmt", "std", "ansi", "env-filter"] }
 tracing-appender = "0.2"
-dirs = "5"
+dirs = "7"
 tempfile = "3"
 proptest = "1"
 inventory = "0.3"
