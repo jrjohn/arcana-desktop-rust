@@ -1,0 +1,8 @@
+# One compiler for every platform and CI lane (Linux Docker, Windows agent, macOS agent,
+# GitHub packaging). Bump here only. Edition (2024) is separate: it is the language edition
+# in Cargo.toml, not a compiler version.
+[toolchain]
+channel = "1.99.1"
+components = ["rustfmt", "clippy", "llvm-tools-preview"]
+targets = ["wasm32-unknown-unknown"]
+profile = "minimal"
