@@ -8,6 +8,7 @@ a plugin system (built-in + sandboxed WASM), and CRDT offline sync. Runs on Wind
 
 [![Architecture Rating](https://img.shields.io/badge/Architecture%20Rating-⭐⭐⭐⭐%208.5%2F10-gold.svg)](#architecture-evaluation)
 [![Rust](https://img.shields.io/badge/dynamic/toml?url=https://raw.githubusercontent.com/jrjohn/arcana-desktop-rust/main/Cargo.toml&query=%24.workspace.package.edition&label=Rust%20edition&color=CE422B&logo=rust&logoColor=white)](https://www.rust-lang.org/)
+[![rustc](https://img.shields.io/badge/dynamic/toml?url=https://raw.githubusercontent.com/jrjohn/arcana-desktop-rust/main/rust-toolchain.toml&query=%24.toolchain.channel&label=rustc&color=CE422B&logo=rust&logoColor=white)](https://github.com/jrjohn/arcana-desktop-rust/blob/main/rust-toolchain.toml)
 [![egui](https://img.shields.io/badge/dynamic/toml?url=https://raw.githubusercontent.com/jrjohn/arcana-desktop-rust/main/Cargo.toml&query=%24.workspace.dependencies.egui&label=egui&color=4B8BBE)](https://github.com/emilk/egui)
 [![Wasmtime](https://img.shields.io/badge/dynamic/toml?url=https://raw.githubusercontent.com/jrjohn/arcana-desktop-rust/main/Cargo.toml&query=%24.workspace.dependencies.wasmtime.version&label=Wasmtime&color=654FF0&logo=webassembly&logoColor=white)](https://wasmtime.dev/)
 [![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux-informational.svg)](#ci)
@@ -338,7 +339,7 @@ cargo xtask layers           # dependency-direction check only
 
 ### Prerequisites (per OS)
 
-Rust stable (`rustup`, edition 2024) on every OS. Release binary: `cargo build --release -p arcana-app`
+Rust 1.99.1 pinned by `rust-toolchain.toml` (rustup installs it automatically; edition 2024) on every OS. Release binary: `cargo build --release -p arcana-app`
 → `target/release/arcana-app[.exe]`. Data (SQLite, logs, plugins) goes to the OS data directory.
 
 | OS | Prerequisites | Notes |

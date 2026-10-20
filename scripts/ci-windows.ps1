@@ -21,7 +21,8 @@ if (-not (Get-Command cargo -ErrorAction SilentlyContinue)) {
 # Pinned, not `stable`: `rustup toolchain install stable` silently upgraded the toolchain under
 # running builds, and 2026-10-19 PR-17/18/19 failed only here with corrupt-artifact errors
 # ("can't find crate for `std`", "only metadata stub found"). Bump deliberately.
-$rustVersion = '1.99.0'
+# Single source of truth: rust-toolchain.toml at the repo root.
+$rustVersion = ((Get-Content rust-toolchain.toml | Select-String '^channel\s*=\s*"([^"]+)"').Matches[0].Groups[1].Value)
 # The agent is a 4-core / 7.7 GB laptop (0.6 GB free observed mid-build): cap rustc parallelism.
 $env:CARGO_BUILD_JOBS = '2'
 $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
