@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.3](https://github.com/jrjohn/arcana-desktop-rust/compare/v0.2.2...v0.2.3) (2026-10-23)
+
+
+### Bug Fixes
+
+* **deps:** update rust crate tokio to v1.54.1 ([#29](https://github.com/jrjohn/arcana-desktop-rust/issues/29)) ([84c77b2](https://github.com/jrjohn/arcana-desktop-rust/commit/84c77b2641fae59b25bc6e6f2e8ceda3486aa1e8))
+* **deps:** update rust crate uuid to v1.29.0 ([#30](https://github.com/jrjohn/arcana-desktop-rust/issues/30)) ([89e98d9](https://github.com/jrjohn/arcana-desktop-rust/commit/89e98d9f76009e2a07687dffd6a416886c705b4a))
+
 ## [0.2.2](https://github.com/jrjohn/arcana-desktop-rust/compare/v0.2.1...v0.2.2) (2026-10-20)
 
 
