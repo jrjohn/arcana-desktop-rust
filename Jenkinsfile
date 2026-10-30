@@ -6,10 +6,17 @@
 //  * Windows (label `windows`, office MSI laptop): scripts/ci-windows.ps1 — cargo test + release.
 //  * macOS  (label `macos`, Mac mini): scripts/ci-native.sh — cargo test + release.
 // Both native scripts install rustup for the build user if cargo is missing (idempotent).
+// The pipeline-level timeout counts from build start, i.e. it includes time spent waiting to
+// acquire ci-rust-build (shared with arcana-cloud-rust, which deliberately does NOT count its
+// own lock-wait against its timeout — see that repo's Jenkinsfile comment). 120 min proved too
+// tight on 2026-10-30: two builds (#1, #2) both ABORTED at the 120-min ceiling with most of the
+// budget burned waiting for arcana-cloud-rust's concurrent builds to release the shared lock,
+// leaving too little for the actual docker build + cargo test + GUI smoke work. Raised to 240 min
+// to give the Linux branch enough room after a long lock-wait on a contended day.
 pipeline {
     agent none
     options {
-        timeout(time: 120, unit: 'MINUTES')
+        timeout(time: 240, unit: 'MINUTES')
         buildDiscarder(logRotator(numToKeepStr: '20'))
     }
     stages {
