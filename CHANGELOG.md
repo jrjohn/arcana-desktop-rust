@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.5](https://github.com/jrjohn/arcana-desktop-rust/compare/v0.2.4...v0.2.5) (2026-10-31)
+
+
+### Bug Fixes
+
+* **deps:** update rust crate wat to v1.263.0 ([#34](https://github.com/jrjohn/arcana-desktop-rust/issues/34)) ([6671eca](https://github.com/jrjohn/arcana-desktop-rust/commit/6671eca0ab33255ae55e4b36a24a5bdf05c7e931))
+
 ## [0.2.4](https://github.com/jrjohn/arcana-desktop-rust/compare/v0.2.3...v0.2.4) (2026-10-30)
 
 
