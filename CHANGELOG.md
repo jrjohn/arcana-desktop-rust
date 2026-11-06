@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.6](https://github.com/jrjohn/arcana-desktop-rust/compare/v0.2.5...v0.2.6) (2026-11-06)
+
+
+### Bug Fixes
+
+* **deps:** update rust crate flate2 to v1.1.11 ([#37](https://github.com/jrjohn/arcana-desktop-rust/issues/37)) ([dfb1e3c](https://github.com/jrjohn/arcana-desktop-rust/commit/dfb1e3cda8fa8f0486cf6778901f43d0ab327350))
+
 ## [0.2.5](https://github.com/jrjohn/arcana-desktop-rust/compare/v0.2.4...v0.2.5) (2026-10-31)
 
 
