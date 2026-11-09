@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.8](https://github.com/jrjohn/arcana-desktop-rust/compare/v0.2.7...v0.2.8) (2026-11-09)
+
+
+### Bug Fixes
+
+* **deps:** update rust crate uuid to v1.29.2 ([#41](https://github.com/jrjohn/arcana-desktop-rust/issues/41)) ([595aa2d](https://github.com/jrjohn/arcana-desktop-rust/commit/595aa2d4687b954952aefb78ad441d7d88c0fa97))
+
 ## [0.2.7](https://github.com/jrjohn/arcana-desktop-rust/compare/v0.2.6...v0.2.7) (2026-11-07)
 
 
