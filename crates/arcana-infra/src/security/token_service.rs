@@ -137,7 +137,7 @@ impl TokenServiceImpl {
             m.update(data.as_bytes());
             m.finalize().into_bytes()
         });
-        mac.map(|b| B64.encode(b)).unwrap_or_default()
+        mac.map_or_default(|b| B64.encode(b))
     }
 
     fn validate(&self, token: &str) -> Result<TokenValidationResult, String> {

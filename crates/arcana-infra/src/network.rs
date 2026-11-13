@@ -42,10 +42,7 @@ impl Default for TcpProbe {
 impl Probe for TcpProbe {
     fn probe(&self) -> bool {
         self.targets.iter().any(|t| {
-            let addrs: Vec<SocketAddr> = t
-                .to_socket_addrs()
-                .map(Iterator::collect)
-                .unwrap_or_default();
+            let addrs: Vec<SocketAddr> = t.to_socket_addrs().map_or_default(Iterator::collect);
             addrs
                 .iter()
                 .any(|a| TcpStream::connect_timeout(a, self.timeout).is_ok())

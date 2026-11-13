@@ -202,13 +202,11 @@ fn setting_widget(ui: &mut Ui, f: &SettingField, v: &serde_json::Value, out: &mu
 fn ui_node(ui: &mut Ui, n: &serde_json::Value, out: &mut Vec<Input>, depth: usize) {
     let s = |k: &str| n.get(k).and_then(|v| v.as_str()).unwrap_or_default();
     let strings = |v: Option<&serde_json::Value>| -> Vec<String> {
-        v.and_then(|v| v.as_array())
-            .map(|a| {
-                a.iter()
-                    .map(|x| x.as_str().unwrap_or_default().to_string())
-                    .collect()
-            })
-            .unwrap_or_default()
+        v.and_then(|v| v.as_array()).map_or_default(|a| {
+            a.iter()
+                .map(|x| x.as_str().unwrap_or_default().to_string())
+                .collect()
+        })
     };
     if depth > 16 {
         return;

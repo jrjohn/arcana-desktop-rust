@@ -67,8 +67,7 @@ impl PluginLoader for WasmLoader {
             .contributes
             .as_ref()
             .and_then(|c| c.commands.as_ref())
-            .map(|c| c.iter().map(|c| c.id.clone()).collect())
-            .unwrap_or_default();
+            .map_or_default(|c| c.iter().map(|c| c.id.clone()).collect());
         Ok(Box::new(WasmHostedPlugin {
             metadata,
             state: PluginState::Loaded,

@@ -113,8 +113,7 @@ impl Replica {
             let mut docs = self.store.docs.lock().unwrap();
             let clock = docs
                 .get(id)
-                .map(|d| d.clock.clone())
-                .unwrap_or_default()
+                .map_or_default(|d| d.clock.clone())
                 .increment(&self.node);
             let doc = Wire {
                 id: id.into(),

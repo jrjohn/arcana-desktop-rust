@@ -138,7 +138,7 @@ impl FormKind for ProductForm {
             0 => p.code.clone(),
             1 => p.name.clone(),
             2 => p.description.clone().unwrap_or_default(),
-            3 => p.category_id.map(|c| c.to_string()).unwrap_or_default(),
+            3 => p.category_id.map_or_default(|c| c.to_string()),
             4 => p.unit.clone(),
             5 => n(p.price),
             6 => n(p.cost),
@@ -146,7 +146,7 @@ impl FormKind for ProductForm {
             8 => n(p.min_stock_level),
             9 => n(p.max_stock_level),
             10 => p.barcode.clone().unwrap_or_default(),
-            11 => p.weight.map(n).unwrap_or_default(),
+            11 => p.weight.map_or_default(n),
             _ => p.is_active.to_string(),
         }
     }

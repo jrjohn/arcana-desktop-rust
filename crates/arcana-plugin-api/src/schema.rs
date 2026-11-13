@@ -126,13 +126,12 @@ pub fn settings_form(manifest: &PluginManifest) -> Vec<SettingField> {
         .as_ref()
         .and_then(|c| c.configuration.as_ref())
         .and_then(|c| c.properties.as_ref())
-        .map(|props| {
+        .map_or_default(|props| {
             props
                 .iter()
                 .map(|(k, p)| SettingField::from_property(k, p))
                 .collect()
         })
-        .unwrap_or_default()
 }
 
 #[cfg(test)]

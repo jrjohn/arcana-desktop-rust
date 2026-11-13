@@ -20,8 +20,7 @@ fn rows(svc: &UiServices) -> Vec<PluginRow> {
             let health = host.health_status(&p.id);
             let settings = host
                 .manifest(&p.id)
-                .map(|m| settings_form(&m))
-                .unwrap_or_default()
+                .map_or_default(|m| settings_form(&m))
                 .into_iter()
                 .map(|f| {
                     let v = svc

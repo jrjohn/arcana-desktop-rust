@@ -42,8 +42,7 @@ impl EventAggregator for EventAggregatorImpl {
             .lock()
             .subscribers
             .get(&type_id)
-            .map(|v| v.iter().map(|(_, h)| h.clone()).collect())
-            .unwrap_or_default();
+            .map_or_default(|v| v.iter().map(|(_, h)| h.clone()).collect());
         for h in snapshot {
             let _ = catch_unwind(AssertUnwindSafe(|| h(event)));
         }
