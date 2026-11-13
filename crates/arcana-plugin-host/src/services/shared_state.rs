@@ -42,8 +42,7 @@ impl SharedStateStoreImpl {
             .lock()
             .watchers
             .get(key)
-            .map(|v| v.iter().map(|(_, h)| h.clone()).collect())
-            .unwrap_or_default();
+            .map_or_default(|v| v.iter().map(|(_, h)| h.clone()).collect());
         for h in snapshot {
             let v = value.map(|v| &**v as &(dyn Any + Send + Sync));
             let _ = catch_unwind(AssertUnwindSafe(|| h(v)));

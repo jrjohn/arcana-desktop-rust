@@ -175,24 +175,18 @@ impl<K: ListKind> ViewModel<K> {
             Input::PreviousPage | Input::NextPage => vec![],
             Input::New => vec![Effect::Navigate(K::new_route())],
             Input::Open(id) => vec![Effect::Navigate(K::detail_route(id))],
-            Input::Delete(id) => self
-                .find(id)
-                .map(|r| {
-                    vec![Effect::ConfirmDelete {
-                        id,
-                        label: K::label(r),
-                    }]
-                })
-                .unwrap_or_default(),
-            Input::DeleteConfirmed(id) => self
-                .find(id)
-                .map(|r| {
-                    vec![Effect::Run(Task::Delete {
-                        id,
-                        label: K::label(r),
-                    })]
-                })
-                .unwrap_or_default(),
+            Input::Delete(id) => self.find(id).map_or_default(|r| {
+                vec![Effect::ConfirmDelete {
+                    id,
+                    label: K::label(r),
+                }]
+            }),
+            Input::DeleteConfirmed(id) => self.find(id).map_or_default(|r| {
+                vec![Effect::Run(Task::Delete {
+                    id,
+                    label: K::label(r),
+                })]
+            }),
             Input::Deleted(Ok(label)) => {
                 self.state.rows.retain(|r| K::label(r) != label);
                 self.state.total_count = self.state.total_count.saturating_sub(1);

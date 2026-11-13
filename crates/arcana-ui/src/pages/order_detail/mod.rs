@@ -145,11 +145,7 @@ impl ViewModel {
     fn sync_texts(&mut self) {
         let s = &mut self.state;
         s.order_date_text = fmt::iso_date(s.order.order_date);
-        s.expected_delivery_text = s
-            .order
-            .expected_delivery_date
-            .map(fmt::iso_date)
-            .unwrap_or_default();
+        s.expected_delivery_text = s.order.expected_delivery_date.map_or_default(fmt::iso_date);
         s.shipping_cost_text = fmt::number(s.order.shipping_cost, 0).replace(',', "");
         s.discount_text = fmt::number(s.order.discount_amount, 0).replace(',', "");
         s.item_discount_text = s

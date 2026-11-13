@@ -29,8 +29,7 @@ pub enum DiagramFormat {
 /// Lower-cased extension including the dot, like `Path.GetExtension(...).ToLowerInvariant()`.
 fn extension(path: &Path) -> String {
     path.extension()
-        .map(|e| format!(".{}", e.to_string_lossy().to_lowercase()))
-        .unwrap_or_default()
+        .map_or_default(|e| format!(".{}", e.to_string_lossy().to_lowercase()))
 }
 
 /// C# `GetFormatFromExtension`.
@@ -489,7 +488,7 @@ pub fn from_drawio(xml_text: &str) -> Option<Diagram> {
         d.background_color = g.get("background").unwrap_or("#FFFFFF").into();
     }
 
-    let cells = model.map(|m| m.descendants("mxCell")).unwrap_or_default();
+    let cells = model.map_or_default(|m| m.descendants("mxCell"));
     let mut edge_cells = Vec::new();
     for cell in cells {
         if matches!(cell.get("id"), Some("0" | "1")) {

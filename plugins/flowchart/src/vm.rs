@@ -208,8 +208,7 @@ impl EditorState {
 
 fn file_name(p: &Path) -> String {
     p.file_name()
-        .map(|n| n.to_string_lossy().into_owned())
-        .unwrap_or_default()
+        .map_or_default(|n| n.to_string_lossy().into_owned())
 }
 
 /// The editor view model.

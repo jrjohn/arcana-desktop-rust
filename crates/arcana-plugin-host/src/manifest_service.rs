@@ -249,8 +249,7 @@ impl ManifestService {
     #[must_use]
     pub fn activation_events(&self, plugin_id: &str) -> Vec<String> {
         self.manifest(plugin_id)
-            .map(|m| m.activation_events().to_vec())
-            .unwrap_or_default()
+            .map_or_default(|m| m.activation_events().to_vec())
     }
 
     /// C# `GetPluginsForActivationEvent`.
