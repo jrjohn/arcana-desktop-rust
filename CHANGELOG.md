@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.11](https://github.com/jrjohn/arcana-desktop-rust/compare/v0.2.10...v0.2.11) (2026-11-20)
+
+
+### Bug Fixes
+
+* **deps:** update rust crate wasmtime to v49.0.7 ([#48](https://github.com/jrjohn/arcana-desktop-rust/issues/48)) ([4e1c1d4](https://github.com/jrjohn/arcana-desktop-rust/commit/4e1c1d4ce5dc19b0af4b46d38d046d05de99b1be))
+
 ## [0.2.10](https://github.com/jrjohn/arcana-desktop-rust/compare/v0.2.9...v0.2.10) (2026-11-17)
 
 
