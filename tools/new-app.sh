@@ -63,7 +63,7 @@ printf '%s\n' "$TEXT_FILES" | xargs perl -pi -e "
     s/\"Arcana - Enterprise Management System\"/\"${TITLE}\"/g;
     s/\\{title\\} — Arcana/{title} — ${TITLE}/g;
     s/\"app\\.name\": \"Arcana\"/\"app.name\": \"${TITLE}\"/g;
-    s/(join|ends_with)\\(\"Arcana\"\\)/\$1(\"${TITLE}\")/g;
+    s/(join|ends_with)\\(\"Arcana(\/[^\"]*)?\"\\)/\$1(\"${TITLE}\$2\")/g;
     s{repository = \"https://github.com/jrjohn/arcana-desktop-rust\"}{repository = \"https://github.com/jrjohn/${APP}\"}g;
     s{Value='https://github.com/jrjohn/arcana-desktop-rust'}{Value='https://github.com/jrjohn/${APP}'}g;
     s{cargo-target\\\\arcana-desktop-rust}{cargo-target\\\\${APP}}g;
