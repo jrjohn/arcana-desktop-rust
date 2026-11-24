@@ -68,6 +68,10 @@ const GUI_CRATES: &[&str] = &[
     "rfd",
 ];
 
+/// Only the data layer talks to the database driver; services reach storage through repositories.
+const DB_ALLOWED: &[&str] = &["arcana-data"];
+const DB_CRATES: &[&str] = &["sqlx"];
+
 fn check(meta: &cargo_metadata::Metadata) -> Vec<String> {
     let rules = allowed();
     let members: Vec<_> = meta.workspace_packages();
@@ -89,6 +93,11 @@ fn check(meta: &cargo_metadata::Metadata) -> Vec<String> {
             if GUI_CRATES.contains(&d) && !GUI_ALLOWED.contains(&name) {
                 errors.push(format!(
                     "{name} -> {d}: only the UI layer may depend on the GUI toolkit"
+                ));
+            }
+            if DB_CRATES.contains(&d) && !DB_ALLOWED.contains(&name) {
+                errors.push(format!(
+                    "{name} -> {d}: only the data layer may depend on the database driver"
                 ));
             }
         }

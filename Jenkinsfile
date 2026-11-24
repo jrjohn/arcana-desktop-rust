@@ -109,14 +109,29 @@ pipeline {
                             environment { AQ_FRAMEWORK = 'rust-desktop' }
                             steps {
                                 sh '''
+                                    set +e
+                                    # Pinned version, same file and image order as tools/arch-check.sh. No
+                                    # :latest fallback: an unpinned image changes the verdict on an
+                                    # unrelated arch-qube release. Neither image → fail (NOT a pass).
+                                    AQ_VER=$(tr -d '[:space:]' < tools/arch-qube.version)
+                                    AQ_IMG=""
+                                    for cand in "ghcr.io/jrjohn/arch-qube:${AQ_VER}" "arcana.boo/arcana/arch-qube:${AQ_VER}"; do
+                                        if docker image inspect "$cand" >/dev/null 2>&1 || docker pull -q "$cand" >/dev/null 2>&1; then
+                                            AQ_IMG="$cand"; break
+                                        fi
+                                    done
+                                    [ -n "$AQ_IMG" ] || { echo "arch-qube ${AQ_VER} not pullable from ghcr.io or arcana.boo — NOT a pass"; exit 1; }
+                                    echo "arch-qube image: $AQ_IMG"
                                     AQ="arcana-arch-qube-desktop-${CI_ID}"
                                     docker rm -f "$AQ" 2>/dev/null || true
                                     docker create --name "$AQ" --network devops_default -v /src -v /output \
-                                        arcana.boo/arcana/arch-qube:latest \
+                                        "$AQ_IMG" \
                                         scan /src --framework "$AQ_FRAMEWORK" --no-ai --ci \
                                         --format json,markdown -o /output --threshold 90 || exit 1
                                     tar --exclude=./.git --exclude=./target --exclude=./.scannerwork \
-                                        --exclude=./arch-qube-reports -C . -cf - . | docker cp - "$AQ":/src || exit 1
+                                        --exclude=./arch-qube-reports -C . -cf - . | docker cp - "$AQ":/src || { docker rm -f "$AQ"; exit 1; }
+                                    # set +e above: under Jenkins' default `sh -e` a failing scan used to
+                                    # abort here, skipping the report copy and leaking the container.
                                     docker start -a "$AQ"
                                     AQ_RC=$?
                                     mkdir -p arch-qube-reports

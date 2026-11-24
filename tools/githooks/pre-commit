@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+# Fast layering check on every commit (no docker, no cargo). The full checks are
+# `cargo xtask layers` (crate dependency direction), tools/arch-check.sh and the Jenkins stage
+# "Architecture Qube". Rules: AGENTS.md §3.
+#
+# Regex, not `case` globs: in a case pattern `*` also matches `/`, so `crates/*/src/*.rs`
+# would match every correctly layered file too (this exact bug false-blocked good files in
+# arcana-embedded-esp32's first version of this hook). Only ADDED files / ADDED lines are
+# judged, so editing a legacy file never fails on old code.
+set -euo pipefail
+
+fail=0
+
+# R6 — a NEW .rs file must sit in a layer directory: crates/<crate>/src/<module-dir>/…,
+# crates/<crate>/{tests,benches,examples}/…, or be a crate root (src/lib.rs, src/main.rs,
+# src/bin/<x>.rs). A new flat file next to lib.rs (crates/x/src/foo.rs) or anywhere outside
+# crates/ plugins/ plugins-wasm/ xtask/ is rejected.
+ok_path='^(crates|plugins|plugins-wasm)/[^/]+/(src/(lib|main)\.rs|src/bin/[a-z0-9_]+\.rs|src/[a-z0-9_]+/.+\.rs|(tests|benches|examples)/.+\.rs|build\.rs)$|^xtask/src/main\.rs$'
+while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    [[ "$f" =~ \.rs$ ]] || continue
+    if [[ ! "$f" =~ $ok_path ]]; then
+        echo "pre-commit: $f — new source file outside a layer directory. Put it under the module directory of its layer (AGENTS.md §2) or run tools/new-feature.sh" >&2
+        fail=1
+    fi
+done <<< "$(git diff --cached --name-only --diff-filter=AR)"
+
+# R2 — only the composition roots (crates/*-infra/src/wiring.rs, crates/*-app/src/{main,bootstrap}.rs) name a concrete *Impl type a file
+# does not define. Allowed elsewhere: the file that defines `struct XImpl` (its own impl
+# blocks / constructors), `pub use` re-exports in lib.rs / mod.rs, files under tests/, and
+# comments. A multi-line `use a::{\n XImpl,\n}` is caught because every added line is scanned.
+while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    [[ "$f" =~ \.rs$ ]] || continue
+    if [[ "$f" =~ ^crates/[^/]+-infra/src/wiring\.rs$ ]] || [[ "$f" =~ ^crates/[^/]+-app/src/(main|bootstrap)\.rs$ ]] || [[ "$f" =~ ^(crates|plugins)/[^/]+/tests/ ]]; then
+        continue
+    fi
+    added="$(git diff --cached -U0 -- "$f" | grep -E '^\+[^+]' | sed 's/^+//' | grep -vE '^[[:space:]]*//' || true)"
+    [ -n "$added" ] || continue
+    if [[ "$f" =~ (^|/)(lib|mod)\.rs$ ]]; then
+        added="$(printf '%s\n' "$added" | grep -vE '^[[:space:]]*pub use ' || true)"
+    fi
+    staged="$(git show ":$f" 2>/dev/null || true)"
+    bad=""
+    while IFS= read -r line; do
+        for tok in $(printf '%s\n' "$line" | grep -oE '\b[A-Z][A-Za-z0-9]*Impl\b' || true); do
+            if printf '%s\n' "$staged" | grep -qE "^[[:space:]]*(pub(\([a-z]+\))?[[:space:]]+)?struct[[:space:]]+${tok}\b"; then
+                continue
+            fi
+            bad+="    ${line}"$'\n'
+            break
+        done
+    done <<< "$added"
+    [ -n "$bad" ] || continue
+    echo "pre-commit: $f names a concrete *Impl it does not define — hold Arc<dyn Trait> and wire it in crates/*-infra/src/wiring.rs (AGENTS.md R2):" >&2
+    printf '%s' "$bad" >&2
+    fail=1
+done <<< "$(git diff --cached --name-only --diff-filter=ACMR)"
+
+if [ "$fail" -ne 0 ]; then
+    echo "pre-commit: blocked. Full check: cargo xtask layers && tools/arch-check.sh" >&2
+    exit 1
+fi
