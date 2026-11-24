@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/jrjohn/arcana-desktop-rust/compare/v0.2.12...v0.3.0) (2026-11-24)
+
+
+### Features
+
+* AGENTS.md + scaffolding + arch-qube gate for AI coding agents ([#51](https://github.com/jrjohn/arcana-desktop-rust/issues/51)) ([0cebd47](https://github.com/jrjohn/arcana-desktop-rust/commit/0cebd4703d66e5bb6307033774902e9ad3f86b52))
+
 ## [0.2.12](https://github.com/jrjohn/arcana-desktop-rust/compare/v0.2.11...v0.2.12) (2026-11-20)
 
 
