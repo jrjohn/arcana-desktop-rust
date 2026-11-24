@@ -39,15 +39,10 @@ cd "$DEST"
 #     products on one Jenkins host must not share them. (There is no APP_NAME variable in this
 #     Jenkinsfile.) The lock name ci-rust-build is NOT renamed: it is the host-wide memory guard
 #     shared by every Rust repo on bluesea.
-# Not renamed on purpose: the crate DIRECTORIES crates/arcana-*/ (see below), the ARCANA_* dev
-# env switches (ARCANA_SMOKE_SCREENSHOT…, read by scripts/gui-smoke.sh), C# lineage in doc
-# comments, and arcana.boo (the registry / arch-qube image host).
-#
-# Why the directories keep their names: arch-qube's rust-desktop profile identifies the layers
-# AND the composition roots (di_container_files **/arcana-infra/src/wiring.rs,
-# **/arcana-app/src/{main,bootstrap}.rs) by directory. arch-qube.yaml `layer_paths` can re-map
-# layers, but not the composition roots, so a renamed directory turns every legitimate *Impl
-# wiring into a CRITICAL "Only DI Container Imports Impl" violation (measured 2026-11-24).
+# Not renamed on purpose: the ARCANA_* dev env switches (ARCANA_SMOKE_SCREENSHOT…, read by
+# scripts/gui-smoke.sh), C# lineage in doc comments, and arcana.boo (the registry / arch-qube
+# image host). Crate directories are renamed with their packages: arch-qube 0.5.6's rust-desktop
+# profile matches layers and composition roots by suffix (*-infra/src/wiring.rs, *-ui/, …).
 PKGS="$(perl -ne 'print "$1\n" if /^name\s*=\s*"arcana-([a-z0-9-]+)"/' crates/*/Cargo.toml plugins/*/Cargo.toml plugins-wasm/*/Cargo.toml | sort -u)"
 [ -n "$PKGS" ] || { echo "new-app: no arcana-* packages found" >&2; exit 1; }
 # tools/ is excluded: these scripts describe the template and must keep working in the product.
@@ -55,16 +50,14 @@ TEXT_FILES="$(grep -rIl -e arcana -e Arcana -e desktop-rust-app -e 'Desktop Rust
     --exclude-dir=.git --exclude-dir=tools --exclude=CHANGELOG.md || true)"
 for c in $PKGS; do
     c_us="$(printf '%s' "$c" | tr '-' '_')"
-    # (?<![\w.-]) / (?![\w-]) keep arcana.boo, arcana-desktop-rust and crates/arcana-x/ paths intact:
-    # a path segment "crates/arcana-ui/" is preceded by "/" — renamed separately below? No: the
-    # directory keeps its name, so only a token NOT preceded by "/" is a package name.
-    printf '%s\n' "$TEXT_FILES" | xargs perl -pi -e "s{(?<![\\w./\\\\-])arcana-${c}(?![\\w-])}{${APP}-${c}}g; s{(?<![\\w])arcana_${c_us}(?!\\w)}{${APP_US}_${c_us}}g"
+    # (?<![\w.-]) / (?![\w-]) keep arcana.boo and arcana-desktop-rust intact; directory paths
+    # crates/arcana-x/ (and crates\\arcana-x\\ in the WiX file) are renamed with the package.
+    printf '%s\n' "$TEXT_FILES" | xargs perl -pi -e "s{(?<![\\w.-])arcana-${c}(?![\\w-])}{${APP}-${c}}g; s{(?<![\\w])arcana_${c_us}(?!\\w)}{${APP_US}_${c_us}}g"
 done
 printf '%s\n' "$TEXT_FILES" | xargs perl -pi -e "
     s/arcana-desktop-rust-(ci|gui):/${APP}-\$1:/g;
     s/\"desktop-(ci|gui)-\\\$CI_ID\"/\"${APP}-\$1-\\\$CI_ID\"/g;
     s/arcana-arch-qube-desktop-/${APP}-arch-qube-/g;
-    s{(release|debug|MacOS)/arcana-app\b}{\$1/${APP}-app}g;
     s/desktop-rust-app/${APP}/g; s/Desktop Rust App/${TITLE}/g;
     s/com\\.jrjohn\\.arcana-desktop/com.example.${APP}/g;
     s/\"Arcana - Enterprise Management System\"/\"${TITLE}\"/g;
@@ -91,9 +84,14 @@ perl -pi -e "s{packaging/arcana\\.}{packaging/${APP}.}g" crates/arcana-app/Cargo
 mv packaging/arcana.desktop "packaging/${APP}.desktop"
 mv packaging/arcana.png "packaging/${APP}.png"
 
+for d in crates/arcana-* plugins/arcana-* plugins-wasm/arcana-*; do
+    [ -d "$d" ] || continue
+    mv "$d" "$(dirname "$d")/${APP}-${d##*/arcana-}"
+done
+
 # Fail loudly if a package-name token survived (same token rule as the rename above).
 LEFT="$(grep -rIl --exclude-dir=.git --exclude-dir=tools --exclude=CHANGELOG.md -e 'arcana[-_]' . \
-    | xargs perl -ne 'print "$ARGV:$.: $_" if /(?<![\w.\/\\-])arcana[-_](core|domain|data|sync|infra|ui|app|plugin[-_](api|host|wasm|flowchart)|wasm[-_]example|desktop)(?![\w-])/; close ARGV if eof' || true)"
+    | xargs perl -ne 'print "$ARGV:$.: $_" if /(?<![\w.-])arcana[-_](core|domain|data|sync|infra|ui|app|plugin[-_](api|host|wasm|flowchart)|wasm[-_]example|desktop)(?![\w-])/; close ARGV if eof' || true)"
 if [ -n "$LEFT" ]; then
     echo "new-app: template package names still present after rename:" >&2
     printf '%s\n' "$LEFT" | head >&2
@@ -111,10 +109,9 @@ cat >> AGENTS.md <<EOT
 ## Origin
 
 Created from arcana-desktop-rust @ \`${SRC_SHA}\` by \`tools/new-app.sh\` (packages renamed
-\`arcana-*\` → \`${APP}-*\`, Rust paths \`arcana_*\` → \`${APP_US}_*\`; crate directories keep
-their \`crates/arcana-*\` names on purpose — arch-qube identifies layers and composition roots
-by them). The layers, rules and definition of done above apply unchanged. Remove template
-features you do not need through \`wiring.rs\` / \`pages/mod.rs\`, not by flattening.
+and crate directories \`arcana-*\` → \`${APP}-*\`, Rust paths \`arcana_*\` → \`${APP_US}_*\`).
+The layers, rules and definition of done above apply unchanged. Remove template features
+you do not need through \`wiring.rs\` / \`pages/mod.rs\`, not by flattening.
 EOT
 
 # Lock file follows the renamed packages (offline: no new dependencies are resolved).

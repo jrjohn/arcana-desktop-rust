@@ -20,15 +20,13 @@ written. `tools/new-app.sh` runs it for you.
 
 | Situation | Do this | Never do this |
 |---|---|---|
-| New desktop product | `tools/new-app.sh <name> <dest-dir>` — copies the whole workspace, renames packages `arcana-*` → `<name>-*` (Rust paths `arcana_*` → `<name>_*`), binary, window title, data directory, bundle id, Sonar key and CI image/container names, resets version to 0.1.0, installs the hook | `cargo new` and copy a few crates or files into it |
+| New desktop product | `tools/new-app.sh <name> <dest-dir>` — copies the whole workspace, renames crates and their directories `arcana-*` → `<name>-*` (Rust paths `arcana_*` → `<name>_*`), binary, window title, data directory, bundle id, Sonar key and CI image/container names, resets version to 0.1.0, installs the hook | `cargo new` and copy a few crates or files into it |
 | New business feature (entity + CRUD + page) | `tools/new-feature.sh <Name>` — one vertical slice: entity, service trait, migration + table mapping, repository trait + `SQLite` impl, service impl, wiring, list page (view model + task + view), `UiServices` field, tests | Put SQL in a service, call a service from `view.rs`, or add `foo.rs` next to `lib.rs` |
 | Show the new page in the shell | Route it like `ProductList`: a `Route` variant + `NavGraph::to_*` in `crates/arcana-ui/src/nav.rs`, then the `Page` / `PageMsg` / `PageTask` arms in `crates/arcana-ui/src/pages/mod.rs` | Open a window or tab from the view directly |
 | New plugin | Mirror `plugins/flowchart` (depends on `arcana-core` + `arcana-plugin-api` only) and add it to the table in `xtask/src/main.rs` | Let a plugin depend on `arcana-infra` or `arcana-data` |
 
 Copying parts instead of `new-app.sh` loses this file, the hook and the CI gates, so nothing
-tells the next agent the rules exist. In a product the crate **directories** keep their
-`crates/arcana-*` names on purpose (arch-qube finds layers and composition roots by them);
-only package names and Rust paths change.
+tells the next agent the rules exist.
 
 ## 2. Layers — where a file goes
 

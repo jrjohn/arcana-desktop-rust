@@ -3,7 +3,7 @@
 #
 #   tools/new-feature.sh Invoice
 #
-# Generates (P = the crate directory prefix, `arcana`; Rust paths use the package prefix):
+# Generates (P = the crate prefix: `arcana` in the template, <app> after tools/new-app.sh):
 #   domain  crates/P-domain/src/entities/<x>.rs           entity (BaseEntity + code/name/is_active)
 #           crates/P-domain/src/services/<x>.rs           <X>Service trait
 #   data    crates/P-data/migrations/<ts>_<x>.sql         table "<Xs>"
@@ -29,9 +29,8 @@ cd "$ROOT"
 
 DOMAIN_DIR="$(ls -d crates/*-domain 2>/dev/null | head -1)"
 [ -n "$DOMAIN_DIR" ] || { echo "new-feature: no crates/*-domain crate — is this an arcana-desktop-rust workspace?" >&2; exit 1; }
-P="${DOMAIN_DIR#crates/}"; P="${P%-domain}"          # crate DIRECTORY prefix (always arcana)
-# Package prefix from the domain crate's Cargo name: tools/new-app.sh renames packages
-# (arcana-domain -> inventory-domain) but keeps the crates/arcana-*/ directories.
+P="${DOMAIN_DIR#crates/}"; P="${P%-domain}"          # crate directory prefix (arcana / <app>)
+# Rust path prefix from the domain crate's package name (tools/new-app.sh renames both).
 PKG="$(perl -ne 'print "$1" and exit if /^name\s*=\s*"(.+)-domain"/' "$DOMAIN_DIR/Cargo.toml")"
 [ -n "$PKG" ] || { echo "new-feature: cannot read the package name from $DOMAIN_DIR/Cargo.toml" >&2; exit 1; }
 PU="$(printf '%s' "$PKG" | tr '-' '_')"              # Rust path prefix, e.g. arcana / inventory
