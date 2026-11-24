@@ -117,6 +117,10 @@ EOT
 # Lock file follows the renamed packages (offline: no new dependencies are resolved).
 cargo metadata --format-version 1 --offline >/dev/null 2>&1 || cargo metadata --format-version 1 >/dev/null
 
+# Renamed paths change rustfmt's import order (arcana_* sorted before async_trait; inventory_*
+# after): reformat so the product's first `cargo fmt --check` (scripts/ci-check.sh) is clean.
+cargo fmt --all
+
 git init -q
 tools/install-hooks.sh >/dev/null
 git add -A
