@@ -58,7 +58,7 @@ for c in $PKGS; do
     # (?<![\w.-]) / (?![\w-]) keep arcana.boo, arcana-desktop-rust and crates/arcana-x/ paths intact:
     # a path segment "crates/arcana-ui/" is preceded by "/" — renamed separately below? No: the
     # directory keeps its name, so only a token NOT preceded by "/" is a package name.
-    printf '%s\n' "$TEXT_FILES" | xargs perl -pi -e "s{(?<![\\w./-])arcana-${c}(?![\\w-])}{${APP}-${c}}g; s{(?<![\\w])arcana_${c_us}(?!\\w)}{${APP_US}_${c_us}}g"
+    printf '%s\n' "$TEXT_FILES" | xargs perl -pi -e "s{(?<![\\w./\\\\-])arcana-${c}(?![\\w-])}{${APP}-${c}}g; s{(?<![\\w])arcana_${c_us}(?!\\w)}{${APP_US}_${c_us}}g"
 done
 printf '%s\n' "$TEXT_FILES" | xargs perl -pi -e "
     s/arcana-desktop-rust-(ci|gui):/${APP}-\$1:/g;
@@ -72,7 +72,18 @@ printf '%s\n' "$TEXT_FILES" | xargs perl -pi -e "
     s/\"app\\.name\": \"Arcana\"/\"app.name\": \"${TITLE}\"/g;
     s/(join|ends_with)\\(\"Arcana\"\\)/\$1(\"${TITLE}\")/g;
     s{repository = \"https://github.com/jrjohn/arcana-desktop-rust\"}{repository = \"https://github.com/jrjohn/${APP}\"}g;
+    s{Value='https://github.com/jrjohn/arcana-desktop-rust'}{Value='https://github.com/jrjohn/${APP}'}g;
+    s{cargo-target\\\\arcana-desktop-rust}{cargo-target\\\\${APP}}g;
 "
+# Installer / package file names (arcana-desktop_<v>.deb, arcana-desktop-<v>.msi).
+perl -pi -e "s/\\barcana-desktop(?=[_-](<v>|\\\$))/${APP}/g" scripts/package.sh
+# A product must not share the template's MSI UpgradeCode / component GUIDs: Windows Installer
+# would treat it as an upgrade of (and uninstall) the other app.
+if [ -f crates/arcana-app/wix/main.wxs ]; then
+    for g in $(grep -oE "Guid='[0-9A-F-]{36}'|UpgradeCode='[0-9A-F-]{36}'" crates/arcana-app/wix/main.wxs | grep -oE '[0-9A-F-]{36}'); do
+        perl -pi -e "s/$g/$(uuidgen | tr a-z A-Z)/" crates/arcana-app/wix/main.wxs
+    done
+fi
 # Packaging: bundle / launcher names and the icon + .desktop file names.
 perl -pi -e "s/\\bArcana\\b/${TITLE}/g; s{packaging/arcana\\.}{packaging/${APP}.}g; s/\\barcana\\.(iconset|icns)/${APP}.\$1/g; s{<string>arcana</string>}{<string>${APP}</string>}g" scripts/package.sh
 perl -pi -e "s/\\bArcana\\b/${TITLE}/g; s/^Icon=arcana\$/Icon=${APP}/" packaging/arcana.desktop
@@ -82,7 +93,7 @@ mv packaging/arcana.png "packaging/${APP}.png"
 
 # Fail loudly if a package-name token survived (same token rule as the rename above).
 LEFT="$(grep -rIl --exclude-dir=.git --exclude-dir=tools --exclude=CHANGELOG.md -e 'arcana[-_]' . \
-    | xargs perl -ne 'print "$ARGV:$.: $_" if /(?<![\w.\/-])arcana[-_](core|domain|data|sync|infra|ui|app|plugin[-_](api|host|wasm|flowchart)|wasm[-_]example|desktop)(?![\w-])/; close ARGV if eof' || true)"
+    | xargs perl -ne 'print "$ARGV:$.: $_" if /(?<![\w.\/\\-])arcana[-_](core|domain|data|sync|infra|ui|app|plugin[-_](api|host|wasm|flowchart)|wasm[-_]example|desktop)(?![\w-])/; close ARGV if eof' || true)"
 if [ -n "$LEFT" ]; then
     echo "new-app: template package names still present after rename:" >&2
     printf '%s\n' "$LEFT" | head >&2
