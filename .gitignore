@@ -5,3 +5,4 @@ clippy-report.json
 lcov.info
 dist/
 smoke-out/
+arch-qube-reports/
