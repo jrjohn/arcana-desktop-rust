@@ -41,7 +41,7 @@ cd "$DEST"
 #     shared by every Rust repo on bluesea.
 # Not renamed on purpose: the ARCANA_* dev env switches (ARCANA_SMOKE_SCREENSHOT…, read by
 # scripts/gui-smoke.sh), C# lineage in doc comments, and arcana.boo (the registry / arch-qube
-# image host). Crate directories are renamed with their packages: arch-qube 0.5.6's rust-desktop
+# image host). Crate directories are renamed with their packages: arch-qube's rust-desktop
 # profile matches layers and composition roots by suffix (*-infra/src/wiring.rs, *-ui/, …).
 PKGS="$(perl -ne 'print "$1\n" if /^name\s*=\s*"arcana-([a-z0-9-]+)"/' crates/*/Cargo.toml plugins/*/Cargo.toml plugins-wasm/*/Cargo.toml | sort -u)"
 [ -n "$PKGS" ] || { echo "new-app: no arcana-* packages found" >&2; exit 1; }
