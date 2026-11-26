@@ -6,17 +6,15 @@
 //  * Windows (label `windows`, office MSI laptop): scripts/ci-windows.ps1 — cargo test + release.
 //  * macOS  (label `macos`, Mac mini): scripts/ci-native.sh — cargo test + release.
 // Both native scripts install rustup for the build user if cargo is missing (idempotent).
-// The pipeline-level timeout counts from build start, i.e. it includes time spent waiting to
-// acquire ci-rust-build (shared with arcana-cloud-rust, which deliberately does NOT count its
-// own lock-wait against its timeout — see that repo's Jenkinsfile comment). 120 min proved too
-// tight on 2026-10-30: two builds (#1, #2) both ABORTED at the 120-min ceiling with most of the
-// budget burned waiting for arcana-cloud-rust's concurrent builds to release the shared lock,
-// leaving too little for the actual docker build + cargo test + GUI smoke work. Raised to 240 min
-// to give the Linux branch enough room after a long lock-wait on a contended day.
+// Timeouts: there is deliberately NO pipeline-level timeout. It counted from build start, so time
+// spent waiting for lock('ci-rust-build') (shared with arcana-cloud-rust and other Rust builds)
+// burned the budget: 120 min ABORTED twice on 2026-10-30, and 240 min still ABORTED PR-53/54/55 on
+// 2026-11-25 before the Linux branch ran a single step. Each branch now has its own timeout, and
+// on Linux `lock` comes BEFORE `timeout` — stage options nest in declaration order, so the clock
+// starts only after the lock is acquired (same rule as arcana-cloud-rust's Jenkinsfile).
 pipeline {
     agent none
     options {
-        timeout(time: 240, unit: 'MINUTES')
         buildDiscarder(logRotator(numToKeepStr: '20'))
     }
     stages {
@@ -24,7 +22,11 @@ pipeline {
             parallel {
                 stage('Linux') {
                     agent { label 'built-in' }
-                    options { lock('ci-rust-build') }
+                    // lock BEFORE timeout: lock-wait must not count toward the 150 min.
+                    options {
+                        lock('ci-rust-build')
+                        timeout(time: 150, unit: 'MINUTES')
+                    }
                     environment {
                         // Branch + build number: build numbers restart per branch, so "build-14" alone let
                         // PR-17 #14 and main #14 share (and delete) one image/container name.
