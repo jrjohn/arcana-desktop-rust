@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/jrjohn/arcana-desktop-rust/compare/v0.3.0...v0.4.0) (2026-11-27)
+
+
+### Features
+
+* enforce arch-check locally (Claude Code Stop hook + pre-push) ([#55](https://github.com/jrjohn/arcana-desktop-rust/issues/55)) ([47c1326](https://github.com/jrjohn/arcana-desktop-rust/commit/47c132642ff33364014fc13eb1c1d38971711cf9))
+
 ## [0.3.0](https://github.com/jrjohn/arcana-desktop-rust/compare/v0.2.12...v0.3.0) (2026-11-24)
 
 
