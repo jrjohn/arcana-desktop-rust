@@ -6,29 +6,29 @@ A **Local-First, Plugin-Everything** desktop application in Rust + egui — a po
 [arcana-windows](https://github.com/jrjohn/arcana-windows) with Clean Architecture, MVVM-UDF,
 a plugin system (built-in + sandboxed WASM), and CRDT offline sync. Runs on Windows, macOS and Linux.
 
-[![Architecture Rating](https://img.shields.io/badge/Architecture%20Rating-⭐⭐⭐⭐%208.5%2F10-gold.svg)](#architecture-evaluation)
-[![Rust](https://img.shields.io/badge/Rust%20edition-2024-CE422B?logo=rust&logoColor=white)](https://www.rust-lang.org/)
-[![rustc](https://img.shields.io/badge/rustc-1.100.0-CE422B?logo=rust&logoColor=white)](https://github.com/jrjohn/arcana-desktop-rust/blob/main/rust-toolchain.toml)
-[![egui](https://img.shields.io/badge/egui-0.36-4B8BBE)](https://github.com/emilk/egui)
-[![Wasmtime](https://img.shields.io/badge/Wasmtime-49-654FF0?logo=webassembly&logoColor=white)](https://wasmtime.dev/)
-[![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux-informational.svg)](#ci)
-[![Tests](https://img.shields.io/badge/tests-1254%2F1254_passing-brightgreen.svg)](#testing)
-[![Coverage](https://img.shields.io/badge/coverage-88.2%25-brightgreen.svg)](#testing)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Architecture Rating](.github/badges/architecture-rating-8-5-10-gold-svg-95adf88a.svg)](#architecture-evaluation)
+[![Rust](.github/badges/rust-edition-2024-ce422b-9c01b6a4.svg)](https://www.rust-lang.org/)
+[![rustc](.github/badges/rustc-1-100-0-ce422b-aee40e8d.svg)](https://github.com/jrjohn/arcana-desktop-rust/blob/main/rust-toolchain.toml)
+[![egui](.github/badges/egui-0-36-4b8bbe-a9acb0e7.svg)](https://github.com/emilk/egui)
+[![Wasmtime](.github/badges/wasmtime-49-654ff0-5cea7a32.svg)](https://wasmtime.dev/)
+[![Platforms](.github/badges/platforms-windows-macos-linux-informatio-f3db892e.svg)](#ci)
+[![Tests](.github/badges/tests-1254-1254-passing-brightgreen-svg-df3f474f.svg)](#testing)
+[![Coverage](.github/badges/coverage-88-2-brightgreen-svg-6ceeef0a.svg)](#testing)
+[![License](.github/badges/license-mit-blue-svg-cd905e0a.svg)](LICENSE)
 
 </div>
 
 <!-- agent-managed badges START -->
 <p align="center">
-  <a href="https://arcana.boo/sonarqube/dashboard?id=desktop-rust-app"><img src="https://img.shields.io/badge/Quality_Gate-OK-brightgreen?style=for-the-badge" alt="Quality Gate"></a>
-  <a href="https://arcana.boo/jenkins/job/desktop-rust-app-pipeline-mb/job/main/"><img src="https://img.shields.io/badge/Build-passing-brightgreen?style=for-the-badge" alt="Build"></a>
+  <a href="https://arcana.boo/sonarqube/dashboard?id=desktop-rust-app"><img src=".github/badges/quality-gate-ok-brightgreen-7365c32e.svg" alt="Quality Gate"></a>
+  <a href="https://arcana.boo/jenkins/job/desktop-rust-app-pipeline-mb/job/main/"><img src=".github/badges/build-passing-brightgreen-f2a434e1.svg" alt="Build"></a>
 </p>
 <!-- agent-managed badges END -->
 <!-- arch-rank START -->
 <p align="center">
-  <img src="https://img.shields.io/badge/arch--qube-100%2F100-blue?style=for-the-badge" alt="arch-qube">
-  <img src="https://img.shields.io/badge/Grade-A%2B-brightgreen?style=for-the-badge" alt="Grade">
-  <img src="https://img.shields.io/badge/Arch_Gate-PASS-brightgreen?style=for-the-badge" alt="Architecture Gate">
+  <img src=".github/badges/arch-qube-100-100-blue-2f391344.svg" alt="arch-qube">
+  <img src=".github/badges/grade-a-brightgreen-1f1e6c73.svg" alt="Grade">
+  <img src=".github/badges/arch-gate-pass-brightgreen-887cab17.svg" alt="Architecture Gate">
 </p>
 <!-- arch-rank END -->
 
