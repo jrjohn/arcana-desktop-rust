@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/jrjohn/arcana-desktop-rust/compare/v0.4.0...v0.4.1) (2026-11-28)
+
+
+### Bug Fixes
+
+* **deps:** update rust to v1.100.1 ([#58](https://github.com/jrjohn/arcana-desktop-rust/issues/58)) ([375fb81](https://github.com/jrjohn/arcana-desktop-rust/commit/375fb81c8113fd8408f6a9f4863f2a72bdee670b))
+
 ## [0.4.0](https://github.com/jrjohn/arcana-desktop-rust/compare/v0.3.0...v0.4.0) (2026-11-27)
 
 
